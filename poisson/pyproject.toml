@@ -1,0 +1,21 @@
+[project]
+name = "poisson"
+version = "0.1.0"
+description = "A small library for Poisson distribution utilities. Project managed using the uv tool."
+readme = "readme.md"
+authors = [
+    { name = "Reza Rajan", email = "28660160+rezarajan@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
