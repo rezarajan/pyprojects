@@ -63,3 +63,58 @@ def binary_search[T: Comparable](input: list[T], target: T) -> int | None:
 
     # Overall, the longest operation in the binary search algorithm in O(log(n))
     # Therefore, binary search is an O(log(n)) operation
+
+
+def recursive_binary_search[T: Comparable](seq: list[T], target: T) -> int | None:
+    """
+    Performs a binary search on a sorted input list, `seq`.
+    Returns the index of `target` if found,
+    otherwise returns None.
+    """
+    # Exhaused the search space, no match
+    if len(seq) == 0:  # O(1)
+        return None
+
+    # Compare the current mid to target
+    midpoint = len(seq) // 2
+
+    if seq[midpoint] == target:  # O(1)
+        return midpoint
+
+    # The following two comparisons use recursion, which
+    # incurs up to O(log(n)) time complexity
+    if seq[midpoint] > target:  # O(1)
+        # Already in the left-slice coordinate system
+        return recursive_binary_search(seq[:midpoint], target)
+
+    if seq[midpoint] < target:  # O(1)
+        res = recursive_binary_search(seq[midpoint + 1 :], target)
+        if res is None:
+            return None
+        # result is relative to the right-slice; adjust to original indices
+        return midpoint + 1 + res
+
+
+def idx_binary_search[T: Comparable](seq: list[T], target: T) -> int | None:
+    """
+    Performs a binary search on a sorted input list, `seq`.
+    Returns the index of `target` if found,
+    otherwise returns None.
+    """
+    # NOTE: This function uses an inner unexported function to accomplish the search.
+    # This version is also more efficient than passing slices, becuase in Python
+    # slices are copies. For binary search with slices will incur O(n) extra work in allocations.
+    # By comparison, this bounded indices approach only passes integers.
+
+    def _search(lo: int, hi: int) -> int | None:
+        # Reached the end of the search
+        if lo > hi:
+            return None
+        mid = (lo + hi) // 2
+        if seq[mid] == target:
+            return mid
+        if seq[mid] < target:
+            return _search(mid + 1, hi)
+        return _search(lo, mid)
+
+    return _search(0, len(seq) - 1)

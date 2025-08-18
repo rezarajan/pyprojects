@@ -30,3 +30,5 @@ def test_linear_search(data, target, expected):
 )
 def test_binary_search(data, target, expected):
     assert algorithms.binary_search(data, target) == expected
+    assert algorithms.recursive_binary_search(data, target) == expected
+    assert algorithms.idx_binary_search(data, target) == expected
