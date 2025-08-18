@@ -14,4 +14,5 @@
 | Project Name | Learning Objectives | Description |
 |--------------|------|-------------|
 | [Poisson](https://github.com/rezarajan/pyprojects/tree/main/pyprojects/poisson) | uv (project management), pytest | A small library for Poisson distribution utilities. Project managed using the uv tool. |
+| [Algorithms](https://github.com/rezarajan/pyprojects/tree/main/pyprojects/algorithms) | uv (project management), pytest, make, O-Notation Analysis | A small library for common search algorithms. Use pytest for more structured tests. Make used to manage commands. Time complexity analysis in O-Notation |
 

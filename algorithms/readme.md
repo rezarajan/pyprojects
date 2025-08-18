@@ -2,7 +2,7 @@
 
 A small library of common search algorithms. Used to learn how to build common search algorithms, and analyze the time complexity of each step.
 
-Project managed with uv; tests written in pytest; makefile to run commands.
+Project managed with uv; tests written in pytest; makefile to manage commands.
 
 
 ## Quick Start
