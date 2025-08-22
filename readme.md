@@ -4,7 +4,7 @@
 
 *A monorepo of Python projects; used to learn about python tests, project tooling, and to gain experience in building applications and tools using Python.* 🚀
 
-![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![Python](https://img.shields.io/badge/python-3.13%2B-blue)
 [![License](https://img.shields.io/github/license/rezarajan/pyprojects)](https://github.com/rezarajan/pyprojects/blob/main/LICENSE)
 
 </div>
