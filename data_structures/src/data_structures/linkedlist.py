@@ -27,7 +27,7 @@ class Node(Generic[T]):
 
     def __init__(self, data: T) -> None:
         self.data: T = data
-        self.next: Node[T] | None = None
+        self.next: Optional[Node[T]] = None
 
     def __repr__(self) -> str:
         return f"[Node] {self.data}"
@@ -71,10 +71,12 @@ class LinkedList(Generic[T]):
         if self.head is None:
             return 0
 
-        len = 1
+        len = 0
         current = self.head
-        while current.get_next() is not None:
+        while current is not None:
             len += 1
+            next = current.get_next()
+            current = next
         return len
 
     def get(self, index) -> Optional[Node[T]]:
