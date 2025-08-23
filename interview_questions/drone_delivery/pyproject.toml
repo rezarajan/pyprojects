@@ -1,0 +1,19 @@
+[project]
+name = "drone-delivery"
+version = "0.1.0"
+description = "Drone Delivery practice problem"
+readme = "readme.md"
+authors = [
+    { name = "Reza Rajan", email = "28660160+rezarajan@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
