@@ -1,13 +1,13 @@
 [project]
 name = "algorithms"
 version = "0.1.0"
-description = "A simple search algorithms lib"
+description = "A simple search & sort algorithms lib"
 readme = "readme.md"
 authors = [
     { name = "Reza Rajan", email = "28660160+rezarajan@users.noreply.github.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [ "data_structures" ]
 
 [build-system]
 requires = ["hatchling"]
@@ -17,3 +17,8 @@ build-backend = "hatchling.build"
 dev = [
     "pytest>=8.4.1",
 ]
+
+# See: https://docs.astral.sh/uv/concepts/projects/dependencies/#dependency-sources
+# for using local dependencies. This is not portable beyond uv.
+[tool.uv.sources]
+data_structures = { path = "../data_structures/" }

@@ -1,5 +1,5 @@
 import pytest
-from algorithms import algorithms
+from algorithms import search_algorithms, merge_sort
 
 
 # NOTE: test inputs can be parameterized using pytest
@@ -15,7 +15,7 @@ from algorithms import algorithms
     ],
 )
 def test_linear_search(data, target, expected):
-    assert algorithms.linear_search(data, target) == expected
+    assert search_algorithms.linear_search(data, target) == expected
 
 
 @pytest.mark.parametrize(
@@ -29,6 +29,20 @@ def test_linear_search(data, target, expected):
     ],
 )
 def test_binary_search(data, target, expected):
-    assert algorithms.binary_search(data, target) == expected
-    assert algorithms.recursive_binary_search(data, target) == expected
-    assert algorithms.idx_binary_search(data, target) == expected
+    assert search_algorithms.binary_search(data, target) == expected
+    assert search_algorithms.recursive_binary_search(data, target) == expected
+    assert search_algorithms.idx_binary_search(data, target) == expected
+
+
+@pytest.mark.parametrize(
+    "data, expected",
+    [
+        ([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]),
+        (["a", "d", "e", "b", "f"], ["a", "b", "d", "e", "f"]),
+        ([], []),
+        ([56, 80, -1, 10, -80, 1.5, 8, 12], [-80, -1, 1.5, 8, 10, 12, 56, 80]),
+        ([1], [1]),
+    ],
+)
+def test_merge_sort(data, expected):
+    assert merge_sort.merge_sort(data) == expected
