@@ -1,3 +1,5 @@
+from warnings import resetwarnings
+from data_structures.linkedlist import LinkedList
 import pytest
 from algorithms import search_algorithms, merge_sort
 
@@ -46,3 +48,27 @@ def test_binary_search(data, target, expected):
 )
 def test_merge_sort(data, expected):
     assert merge_sort.merge_sort(data) == expected
+
+
+@pytest.mark.parametrize(
+    "data, expected",
+    [
+        ([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]),
+        (["a", "d", "e", "b", "f"], ["a", "b", "d", "e", "f"]),
+        ([], []),
+        ([56, 80, -1, 10, -80, 1.5, 8, 12], [-80, -1, 1.5, 8, 10, 12, 56, 80]),
+        ([1], [1]),
+    ],
+)
+def test_merge_sort_linked_list(data, expected):
+    _data = LinkedList()
+    _expected = LinkedList()
+
+    for d in data:
+        _data.add(d)
+
+    for e in expected[::-1]:
+        _expected.add(e)
+
+    result = merge_sort.merge_sort_linked_list(_data)
+    assert str(result) == str(_expected)

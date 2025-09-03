@@ -3,7 +3,9 @@ MERGE SORT ALGORITHM
 """
 
 from __future__ import annotations
+
 from typing import Protocol, Tuple, TypeVar, runtime_checkable
+
 from data_structures.linkedlist import LinkedList
 
 """
@@ -21,6 +23,7 @@ class Comparable(Protocol):
     def __gt__(self, other: "Comparable") -> bool: ...
     def __ge__(self, other: "Comparable") -> bool: ...
     def __eq__(self, other: object) -> bool: ...
+    def __str__(self) -> str: ...
 
 
 T = TypeVar("T", bound=Comparable)
@@ -43,7 +46,6 @@ def merge(seqs: Tuple[list[T], list[T]]) -> list[T]:
 
     Takes O(n) time.
     """
-    # TODO:
     _l, _r = seqs
     i: int = 0
     j: int = 0
@@ -98,3 +100,83 @@ def merge_sort(lst: list[T]) -> list[T]:
     seq = merge((_l, _r))
 
     return seq
+
+
+def merge_sort_linked_list(ll: LinkedList[T]) -> LinkedList[T]:
+    """
+    A recursive implementation of the merge sort algorithm for the linked list type.
+
+    Splitting takes logn runs of O(n), so O(nlogn).
+    Sorting takes O(n).
+
+    Overall Time: O(nlogn)
+    """
+
+    def merge(llseq: Tuple[LinkedList[T], LinkedList[T]]) -> LinkedList[T]:
+        """
+        Takes as input a tuple containing two sequenced linked lists and merges them
+        in sorted order.
+
+        Takes O(n) time.
+        """
+
+        _l, _r = llseq
+        merged = LinkedList[T]()
+        cursor = merged.head  # sentinel
+
+        left_head = _l.get_head()
+        right_head = _r.get_head()
+
+        while left_head or right_head:
+            # Flush the remaining items to the merged list
+            # once either tail is reached
+            if left_head is None and right_head:
+                cursor.set_next(right_head)
+                right_head = right_head.get_next()
+
+            if right_head is None and left_head:
+                cursor.set_next(left_head)
+                left_head = left_head.get_next()
+
+            # Comparison
+            if left_head and right_head:
+                l_data = left_head.get_data()
+                r_data = right_head.get_data()
+
+                # Assign the lower value and increment the head
+                if l_data < r_data:
+                    cursor.set_next(left_head)
+                    left_head = left_head.get_next()
+                else:
+                    cursor.set_next(right_head)
+                    right_head = right_head.get_next()
+
+            # Move cursor forward
+            next = cursor.get_next()
+            if next:
+                cursor = next
+
+        # Remove the sentinel and set head to real node
+        cursor = merged.head.get_next()
+        merged.set_head(cursor)
+
+        return merged
+
+    # Edge case - empty list as input
+    if ll.get_head() is None:
+        return ll
+
+    # Base case - single element
+    if ll.len() == 1:
+        return ll
+
+    # Split the list
+    mid = ll.len() // 2
+    _l, _r = ll.slice_at_index(mid)
+
+    _l = merge_sort_linked_list(_l)
+    _r = merge_sort_linked_list(_r)
+
+    # Merge the lists
+    merged = merge((_l, _r))
+    return merged
