@@ -8,10 +8,11 @@ Insert/Delete: O(1) for operation, but O(n) to find element
 
 from __future__ import annotations  # allows forward-referencing without quotes
 
-from typing import Generic, TypeVar, Tuple, Optional
+from typing import Generic, Protocol, TypeVar, Tuple, Optional, runtime_checkable
 
 
-class Strable:
+@runtime_checkable
+class Strable(Protocol):
     def __str__(self) -> str: ...
 
 
@@ -25,9 +26,9 @@ class Node(Generic[T]):
     and the next node it is linked to.
     """
 
-    def __init__(self, data: T) -> None:
-        self.data: T = data
-        self.next: Optional[Node[T]] = None
+    def __init__(self, data: Optional[T] = None, next: Optional[Node[T]] = None) -> None:
+        self.data = data
+        self.next = next
 
     def __repr__(self) -> str:
         return f"[Node] {self.data}"
@@ -51,14 +52,14 @@ class LinkedList(Generic[T]):
     """
 
     def __init__(self) -> None:
-        self.head: Optional[Node[T]] = None
+        self.head: Node[T] = Node()
 
     def __repr__(self) -> str:
-        if self.head is None:
+        if self.get_head() is None:
             return ""
 
         nodes: list[str] = []
-        current = self.head
+        current = self.get_head()
         while current is not None:
             nodes.append(str(current.get_data()))
             current = current.get_next()
@@ -68,11 +69,11 @@ class LinkedList(Generic[T]):
 
     def len(self) -> int:
         """Returns the number of elements in the linked list"""
-        if self.head is None:
+        if self.get_head() is None:
             return 0
 
         len = 0
-        current = self.head
+        current = self.get_head()
         while current is not None:
             len += 1
             next = current.get_next()
@@ -87,15 +88,27 @@ class LinkedList(Generic[T]):
         If the index is larger than the list, this will
         return None.
         """
-        if self.head is None:
+        if self.get_head() is None:
             return None
 
-        current = self.head
+        current = self.get_head()
         for _ in range(index):
             current = current.get_next()
             if current is None:
                 break
         return current
+
+    def get_head(self) -> Optional[Node[T]]:
+        """
+        Gets the head of the linked list. If the head is
+        uninitialized (or a sentinel), then it returns None.
+        """
+        if self.head.data is None:
+            return None
+        return self.head
+
+    def set_head(self, node: Optional[Node[T]] = None) -> None:
+        self.head = node
 
     def add(self, data: T) -> None:
         """
@@ -103,8 +116,8 @@ class LinkedList(Generic[T]):
         O(1) since no scanning is involved.
         """
         new_node = Node(data)
-        new_node.set_next(self.head)
-        self.head = new_node
+        new_node.set_next(self.get_head())
+        self.set_head(new_node)
 
     def insert(self, data: T, index: int) -> None:
         """
@@ -113,8 +126,8 @@ class LinkedList(Generic[T]):
         """
         new_node = Node(data)
         if index == 0:
-            new_node.set_next(self.head)
-            self.head = new_node
+            new_node.set_next(self.get_head())
+            self.set_head(new_node)
             return
 
         prior = self.get(index - 1)
@@ -130,12 +143,12 @@ class LinkedList(Generic[T]):
         O(n), since in the worst case it must scan the entire list
         """
 
-        if self.head is None:
+        if self.get_head() is None:
             return None
 
         # This is at most an O(n) operation
         counter = 0
-        current = self.head
+        current = self.get_head()
         while current is not None:
             # O(1) comparison
             if current.get_data() == data:
@@ -151,10 +164,10 @@ class LinkedList(Generic[T]):
         scanned to find a match.
         """
 
-        if self.head is None:
+        if self.get_head() is None:
             return None
 
-        prior = self.head
+        prior = self.get_head()
         current = prior.get_next()
         while current is not None:
             next = current.get_next()
@@ -165,3 +178,30 @@ class LinkedList(Generic[T]):
             current = next
 
         return None
+
+    def slice_at_index(self, idx: int) -> tuple(LinkedList[T], Optional[LinkedList[T]]):
+        """
+        Splits the Linked List at the index specified. If the index is greater than the length
+        of the list, then the whole linked list will be returned and a None.
+
+        This operation mutates the linked list, being equivalent to the left slice.
+
+        Runs in O(n) time.
+        """
+
+        if self.get_head() is None or idx >= self.len():
+            return (self, None)
+        
+        left, right = LinkedList[T](), LinkedList[T]()
+        left = self
+
+        current = self.get_head()
+        for _ in range(idx - 1):
+            current = current.get_next()
+
+        right.set_head(current.get_next())
+        current.set_next(None)
+
+        return (left, right)
+
+

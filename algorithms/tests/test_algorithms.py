@@ -1,7 +1,7 @@
-from warnings import resetwarnings
-from data_structures.linkedlist import LinkedList
 import pytest
-from algorithms import search_algorithms, merge_sort
+from data_structures.linkedlist import LinkedList
+
+from algorithms import merge_sort, search_algorithms
 
 
 # NOTE: test inputs can be parameterized using pytest
