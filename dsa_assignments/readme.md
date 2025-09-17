@@ -1,6 +1,6 @@
 ## Data Structures and Algorithms (UC Berkely Extension) - Assignment 01
 
-Questions and answers for the first assignment of UC Berkely's DSA Extension.
+Questions and answers for the UC Berkely's DSA Extension assignments.
 
 ### Quickstart
 
