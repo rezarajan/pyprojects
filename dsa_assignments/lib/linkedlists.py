@@ -1,49 +1,39 @@
 from __future__ import annotations
+from abc import ABC, abstractmethod
 from typing import Generic, Optional, TypeVar, Iterator, List
 
 T = TypeVar("T")
 
 
+# -----------------------------
+# Node Base Classes
+# -----------------------------
 class NodeBase(Generic[T]):
-    """
-    Base class for nodes in a linked list.
-
-    Attributes:
-        value (T): The value stored in the node.
-    """
+    """Base class for nodes in linked lists."""
 
     def __init__(self, value: T):
         self.value: T = value
 
 
+# -----------------------------
+# Singly Linked List Node
+# -----------------------------
 class SLLNode(NodeBase[T]):
-    """
-    Node for a singly linked list.
-
-    Attributes:
-        value (T): The value stored in the node (inherited from NodeBase).
-        next (Optional[SLLNode[T]]): Reference to the next node in the list.
-    """
+    """Singly-linked list node."""
 
     def __init__(self, value: T, next: Optional[SLLNode[T]] = None):
         super().__init__(value)
         self.next: Optional[SLLNode[T]] = next
 
     def __repr__(self) -> str:
-        """Return a readable string representation showing the node value and next value."""
-        next_val = self.next.value if self.next else None
-        return f"SLLNode(value={self.value}, next={next_val})"
+        return f"SLLNode(value={self.value}, next={getattr(self.next, 'value', None)})"
 
 
+# -----------------------------
+# Doubly Linked List Node
+# -----------------------------
 class DLLNode(NodeBase[T]):
-    """
-    Node for a doubly linked list.
-
-    Attributes:
-        value (T): The value stored in the node (inherited from NodeBase).
-        prev (Optional[DLLNode[T]]): Reference to the previous node in the list.
-        next (Optional[DLLNode[T]]): Reference to the next node in the list.
-    """
+    """Doubly-linked list node."""
 
     def __init__(
         self,
@@ -56,94 +46,125 @@ class DLLNode(NodeBase[T]):
         self.next: Optional[DLLNode[T]] = next
 
     def __repr__(self) -> str:
-        """Return a readable string representation showing the node value, prev value, and next value."""
-        prev_val = self.prev.value if self.prev else None
-        next_val = self.next.value if self.next else None
-        return f"DLLNode(value={self.value}, prev={prev_val}, next={next_val})"
+        return (
+            f"DLLNode(value={self.value}, "
+            f"prev={getattr(self.prev, 'value', None)}, "
+            f"next={getattr(self.next, 'value', None)})"
+        )
 
 
-class SinglyLinkedList(Generic[T]):
-    """
-    Singly linked list implementation.
+# -----------------------------
+# Abstract Linked List Base
+# -----------------------------
+class LinkedListBase(ABC, Generic[T]):
+    """Abstract base class for linked lists."""
 
-    Attributes:
-        head (Optional[SLLNode[T]]): The first node in the list.
-        _size (int): Number of elements in the list.
-    """
+    @property
+    @abstractmethod
+    def head(self) -> Optional[NodeBase[T]]:
+        """Return the head node (first node)."""
+        pass
+
+    @abstractmethod
+    def append(self, value: T) -> None:
+        pass
+
+    @abstractmethod
+    def prepend(self, value: T) -> None:
+        pass
+
+    @abstractmethod
+    def remove(self, value: T) -> bool:
+        pass
+
+    @abstractmethod
+    def pop_left(self) -> T:
+        pass
+
+    @abstractmethod
+    def clear(self) -> None:
+        pass
+
+    @abstractmethod
+    def to_list(self) -> List[T]:
+        pass
+
+    @abstractmethod
+    def __len__(self) -> int:
+        pass
+
+    @abstractmethod
+    def __iter__(self) -> Iterator[T]:
+        pass
+
+    @abstractmethod
+    def is_empty(self) -> bool:
+        pass
+
+    @abstractmethod
+    def __repr__(self) -> str:
+        pass
+
+
+# -----------------------------
+# Singly Linked List
+# -----------------------------
+class SinglyLinkedList(LinkedListBase[T]):
+    """Singly-linked list implementation."""
 
     def __init__(self) -> None:
-        """Initialize an empty singly linked list."""
-        self.head: Optional[SLLNode[T]] = None
+        self._head: Optional[SLLNode[T]] = None
         self._size: int = 0
 
+    # Property to comply with LinkedListBase
+    @property
+    def head(self) -> Optional[SLLNode[T]]:
+        return self._head
+
+    @head.setter
+    def head(self, node: Optional[SLLNode[T]]) -> None:
+        self._head = node
+
     def __len__(self) -> int:
-        """Return the number of elements in the list."""
         return self._size
 
     def __iter__(self) -> Iterator[T]:
-        """Iterate over the values of the linked list from head to tail."""
-        current = self.head
+        current = self._head
         while current:
             yield current.value
             current = current.next
 
     def __repr__(self) -> str:
-        """Return a readable string representation of the list."""
         values = " -> ".join(repr(v) for v in self)
         return f"SinglyLinkedList([{values}])"
 
     def is_empty(self) -> bool:
-        """Return True if the list is empty, False otherwise."""
         return self._size == 0
 
     def append(self, value: T) -> None:
-        """
-        Append a value to the end of the list.
-
-        Args:
-            value (T): The value to append.
-        """
         new_node = SLLNode(value)
-        if not self.head:
-            self.head = new_node
+        if not self._head:
+            self._head = new_node
         else:
-            current = self.head
+            current = self._head
             while current.next:
                 current = current.next
             current.next = new_node
         self._size += 1
 
     def prepend(self, value: T) -> None:
-        """
-        Insert a value at the beginning of the list.
-
-        Args:
-            value (T): The value to prepend.
-        """
-        new_node = SLLNode(value, next=self.head)
-        self.head = new_node
+        self._head = SLLNode(value, next=self._head)
         self._size += 1
 
     def remove(self, value: T) -> bool:
-        """
-        Remove the first occurrence of the value in the list.
-
-        Args:
-            value (T): The value to remove.
-
-        Returns:
-            bool: True if a node was removed, False if the value was not found.
-        """
-        if not self.head:
+        if not self._head:
             return False
-
-        if self.head.value == value:
-            self.head = self.head.next
+        if self._head.value == value:
+            self._head = self._head.next
             self._size -= 1
             return True
-
-        prev = self.head
-        curr = self.head.next
+        prev = self._head
+        curr = self._head.next
         while curr:
             if curr.value == value:
                 prev.next = curr.next
@@ -153,186 +174,131 @@ class SinglyLinkedList(Generic[T]):
         return False
 
     def pop_left(self) -> T:
-        """
-        Remove and return the value at the head of the list.
-
-        Returns:
-            T: The value of the removed node.
-
-        Raises:
-            IndexError: If the list is empty.
-        """
-        if not self.head:
+        if not self._head:
             raise IndexError("pop from empty list")
-        value = self.head.value
-        self.head = self.head.next
+        value = self._head.value
+        self._head = self._head.next
         self._size -= 1
         return value
 
     def clear(self) -> None:
-        """Remove all elements from the list."""
-        self.head = None
+        self._head = None
         self._size = 0
 
     def to_list(self) -> List[T]:
-        """
-        Convert the linked list to a Python list.
-
-        Returns:
-            List[T]: List containing all the elements in order.
-        """
         return list(iter(self))
 
 
-class DoublyLinkedList(Generic[T]):
-    """
-    Doubly linked list implementation.
-
-    Attributes:
-        head (Optional[DLLNode[T]]): First node in the list.
-        tail (Optional[DLLNode[T]]): Last node in the list.
-        _size (int): Number of elements in the list.
-    """
+# -----------------------------
+# Doubly Linked List
+# -----------------------------
+class DoublyLinkedList(LinkedListBase[T]):
+    """Doubly-linked list implementation."""
 
     def __init__(self) -> None:
-        """Initialize an empty doubly linked list."""
-        self.head: Optional[DLLNode[T]] = None
-        self.tail: Optional[DLLNode[T]] = None
+        self._head: Optional[DLLNode[T]] = None
+        self._tail: Optional[DLLNode[T]] = None
         self._size: int = 0
 
+    # Property to comply with LinkedListBase
+    @property
+    def head(self) -> Optional[DLLNode[T]]:
+        return self._head
+
+    @head.setter
+    def head(self, node: Optional[DLLNode[T]]) -> None:
+        self._head = node
+
+    @property
+    def tail(self) -> Optional[DLLNode[T]]:
+        return self._tail
+
+    @tail.setter
+    def tail(self, node: Optional[DLLNode[T]]) -> None:
+        self._tail = node
+
     def __len__(self) -> int:
-        """Return the number of elements in the list."""
         return self._size
 
     def __iter__(self) -> Iterator[T]:
-        """Iterate over the values in the list from head to tail."""
-        current = self.head
+        current = self._head
         while current:
             yield current.value
             current = current.next
 
     def __repr__(self) -> str:
-        """Return a readable string showing the list values with arrows."""
         if self.is_empty():
             return "DoublyLinkedList([])"
         values = " ⇄ ".join(repr(v) for v in self)
         return f"HEAD ⇄ {values} ⇄ TAIL"
 
     def is_empty(self) -> bool:
-        """Return True if the list is empty, False otherwise."""
         return self._size == 0
 
     def append(self, value: T) -> None:
-        """
-        Append a value to the end of the list.
-
-        Args:
-            value (T): The value to append.
-        """
-        new_node = DLLNode(value, prev=self.tail)
-        if not self.head:
-            self.head = new_node
+        new_node = DLLNode(value, prev=self._tail)
+        if not self._head:
+            self._head = new_node
         else:
-            self.tail.next = new_node
-        self.tail = new_node
+            assert self._tail is not None
+            self._tail.next = new_node
+        self._tail = new_node
         self._size += 1
 
     def prepend(self, value: T) -> None:
-        """
-        Insert a value at the beginning of the list.
-
-        Args:
-            value (T): The value to prepend.
-        """
-        new_node = DLLNode(value, next=self.head)
-        if self.head:
-            self.head.prev = new_node
+        new_node = DLLNode(value, next=self._head)
+        if self._head:
+            self._head.prev = new_node
         else:
-            self.tail = new_node
-        self.head = new_node
+            self._tail = new_node
+        self._head = new_node
         self._size += 1
 
     def remove(self, value: T) -> bool:
-        """
-        Remove the first occurrence of a value from the list.
-
-        Args:
-            value (T): The value to remove.
-
-        Returns:
-            bool: True if a node was removed, False if value not found.
-        """
-        current = self.head
+        current = self._head
         while current:
             if current.value == value:
                 if current.prev:
                     current.prev.next = current.next
                 else:
-                    self.head = current.next
-
+                    self._head = current.next
                 if current.next:
                     current.next.prev = current.prev
                 else:
-                    self.tail = current.prev
-
+                    self._tail = current.prev
                 self._size -= 1
                 return True
             current = current.next
         return False
 
     def pop_left(self) -> T:
-        """
-        Remove and return the value at the head of the list.
-
-        Returns:
-            T: The value of the removed node.
-
-        Raises:
-            IndexError: If the list is empty.
-        """
-        if not self.head:
+        if not self._head:
             raise IndexError("pop from empty list")
-        value = self.head.value
-        self.head = self.head.next
-        if self.head:
-            self.head.prev = None
+        value = self._head.value
+        self._head = self._head.next
+        if self._head:
+            self._head.prev = None
         else:
-            self.tail = None
+            self._tail = None
         self._size -= 1
         return value
 
     def pop(self) -> T:
-        """
-        Remove and return the value at the tail of the list.
-
-        Returns:
-            T: The value of the removed node.
-
-        Raises:
-            IndexError: If the list is empty.
-        """
-        if not self.tail:
+        if not self._tail:
             raise IndexError("pop from empty list")
-        value = self.tail.value
-        self.tail = self.tail.prev
-        if self.tail:
-            self.tail.next = None
+        value = self._tail.value
+        self._tail = self._tail.prev
+        if self._tail:
+            self._tail.next = None
         else:
-            self.head = None
+            self._head = None
         self._size -= 1
         return value
 
     def clear(self) -> None:
-        """Remove all elements from the list."""
-        self.head = None
-        self.tail = None
+        self._head = None
+        self._tail = None
         self._size = 0
 
     def to_list(self) -> List[T]:
-        """
-        Convert the linked list to a Python list.
-
-        Returns:
-            List[T]: List containing all the elements in order.
-        """
         return list(iter(self))
