@@ -1,8 +1,20 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, TypeVar, Iterator, List
+from typing import Protocol, Any, Generic, Callable, Optional, TypeVar, Iterator, List
 
 T = TypeVar("T")
+
+
+# A protocol expressing that a type supports euqality comparisons
+class Comparable(Protocol):
+    def __lt__(self, other: Any) -> bool: ...
+    def __gt__(self, other: Any) -> bool: ...
+    def __ge__(self, other: Any) -> bool: ...
+    def __le__(self, other: Any) -> bool: ...
+    def __eq__(self, other: Any) -> bool: ...
+
+
+C = TypeVar("C", bound=Comparable)
 
 
 # -----------------------------
@@ -51,6 +63,28 @@ class DLLNode(NodeBase[T]):
             f"prev={getattr(self.prev, 'value', None)}, "
             f"next={getattr(self.next, 'value', None)})"
         )
+
+
+# -----------------------------
+# Binary Tree Node
+# -----------------------------
+class BinaryTreeNode(NodeBase[C]):
+    """A node in a binary tree, inheriting from NodeBase."""
+
+    __slots__ = ("value", "left", "right")
+
+    def __init__(
+        self,
+        value: C,
+        left: Optional[BinaryTreeNode[C]] = None,
+        right: Optional[BinaryTreeNode[C]] = None,
+    ) -> None:
+        super().__init__(value)
+        self.left = left
+        self.right = right
+
+    def __repr__(self) -> str:
+        return f"BinaryTreeNode({self.value!r})"
 
 
 # -----------------------------
@@ -302,3 +336,129 @@ class DoublyLinkedList(LinkedListBase[T]):
 
     def to_list(self) -> List[T]:
         return list(iter(self))
+
+
+class BinaryTree(Generic[C]):
+    """Binary tree wrapper class."""
+
+    __slots__ = ("_root", "_size")
+
+    def __init__(self, root: Optional[BinaryTreeNode[C]] = None) -> None:
+        self._root = root
+        self._size = 0 if root is None else self._compute_size(root)
+
+    @property
+    def root(self) -> Optional[BinaryTreeNode[C]]:
+        return self._root
+
+    @property
+    def size(self) -> int:
+        return self._size
+
+    def is_empty(self) -> bool:
+        return self._root is None
+
+    def _compute_size(self, node: Optional[BinaryTreeNode[C]]) -> int:
+        if node is None:
+            return 0
+        return 1 + self._compute_size(node.left) + self._compute_size(node.right)
+
+    # -------------------------------
+    # Insert (simple binary search tree insert)
+    # -------------------------------
+    def insert(self, value: C) -> None:
+        """Insert a value into the binary tree (BST style)."""
+
+        def _insert(node: Optional[BinaryTreeNode[C]], value: C) -> BinaryTreeNode[C]:
+            if node is None:
+                return BinaryTreeNode(value)
+            if value < node.value:
+                node.left = _insert(node.left, value)
+            else:
+                node.right = _insert(node.right, value)
+            return node
+
+        self._root = _insert(self._root, value)
+        self._size += 1
+
+    # -------------------------------
+    # Traversals
+    # -------------------------------
+    def inorder(self, visit: Callable[[C], None]) -> None:
+        def _inorder(node: Optional[BinaryTreeNode[C]]):
+            if node:
+                _inorder(node.left)
+                visit(node.value)
+                _inorder(node.right)
+
+        _inorder(self._root)
+
+    def preorder(self, visit: Callable[[C], None]) -> None:
+        def _preorder(node: Optional[BinaryTreeNode[C]]):
+            if node:
+                visit(node.value)
+                _preorder(node.left)
+                _preorder(node.right)
+
+        _preorder(self._root)
+
+    def postorder(self, visit: Callable[[C], None]) -> None:
+        def _postorder(node: Optional[BinaryTreeNode[C]]):
+            if node:
+                _postorder(node.left)
+                _postorder(node.right)
+                visit(node.value)
+
+        _postorder(self._root)
+
+    # -------------------------------
+    # Utility
+    # -------------------------------
+    def __repr__(self) -> str:
+        values: list[C] = []
+        self.inorder(values.append)
+        return f"BinaryTree({values})"
+
+    def pretty_print(self) -> str:
+        if not self._root:
+            return "<empty>"
+
+        def _display(
+            node: Optional["BinaryTreeNode[C]"],
+        ) -> tuple[list[str], int, int, int]:
+            """
+            Returns:
+                lines: list of strings for this subtree
+                width: total width
+                height: total height
+                middle: horizontal position of root
+            """
+            if node is None:
+                return [], 0, 0, 0
+
+            line = f"┌{node.value}┐"
+            width = len(line)
+
+            if node.left is None and node.right is None:
+                return [line], width, 1, width // 2
+
+            # Recursively display left and right
+            left_lines, left_width, left_height, left_middle = _display(node.left)
+            right_lines, right_width, right_height, right_middle = _display(node.right)
+
+            # Compute new width and height
+            height = max(left_height, right_height) + 2
+            middle = left_width + width // 2 + 1 if node.left else width // 2
+
+            # Pad left/right lines
+            left_lines += [" " * left_width] * (right_height - left_height)
+            right_lines += [" " * right_width] * (left_height - right_height)
+
+            # Combine lines
+            lines = [" " * left_width + line + " " * right_width]  # root line
+            for l, r in zip(left_lines, right_lines):
+                lines.append(l + " " * width + r)
+            return lines, left_width + width + right_width, height, middle
+
+        lines, _, _, _ = _display(self._root)
+        return "\n".join(lines)
