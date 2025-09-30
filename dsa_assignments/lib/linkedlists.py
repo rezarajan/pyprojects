@@ -414,10 +414,14 @@ class BinaryTree(Generic[C]):
     # -------------------------------
     # Utility
     # -------------------------------
-    def __repr__(self) -> str:
-        values: list[C] = []
+    def to_list(self) -> List[C]:
+        """Return all values of the tree in inorder as a list."""
+        values: List[C] = []
         self.inorder(values.append)
-        return f"BinaryTree({values})"
+        return values
+
+    def __repr__(self) -> str:
+        return f"BinaryTree({self.to_list()})"
 
     def pretty_print(self) -> str:
         if not self._root:
