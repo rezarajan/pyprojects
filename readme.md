@@ -14,6 +14,7 @@
 | Project Name | Learning Objectives | Description |
 |--------------|------|-------------|
 | [Poisson](./poisson/) | uv (project management), pytest | A small library for Poisson distribution utilities. Project managed using the uv tool. |
+| [Snippets](./snippets/) | uv (project management), pytest | A simple library of function implementations, in Python. |
 | [Algorithms](./algorithms/) | uv (project management), pytest, make, O-Notation Analysis, Python Generics| A small library for common search algorithms. Use pytest for more structured tests. Make used to manage commands. Time complexity analysis in O-Notation. |
 | [Data Structures](./data_structures/) | O-Notation Analysis, Python Generics, Data Structures | A small library for common data structures. Includes read, insert, delet and search functionality. Generics used to ensure robustness; typing used to provide better static code analysis. |
 | [UC Berkely Extension - DSA Assignments](./dsa_assignments/) | Data Structures and Algorithms in Python | Python coding assignments for the UC Berkely DSA Extension Course |
