@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
     from ..core.config import LSMConfig
     from ..core.types import Record, SSTableMeta, Timestamp
+    from ..interfaces.sstable import SSTableReader, SSTableWriter
 
 from .sstable import SimpleSSTableReader, SimpleSSTableWriter
 
@@ -54,9 +55,9 @@ class SimpleCompactor:
         logger.info(f"Compacting {len(input_tables)} SSTables to level {target_level}")
 
         # Open all input SSTables
-        readers = []
+        readers: list[SSTableReader] = []
         for meta in input_tables:
-            reader = SimpleSSTableReader(meta["data_path"], meta["meta_path"])
+            reader: SSTableReader = SimpleSSTableReader(meta["data_path"], meta["meta_path"])
             readers.append(reader)
 
         try:
@@ -74,7 +75,7 @@ class SimpleCompactor:
             for reader in readers:
                 reader.close()
 
-    def _merge_iterators(self, readers: Sequence[SimpleSSTableReader]) -> Iterator[Record]:
+    def _merge_iterators(self, readers: Sequence[SSTableReader]) -> Iterator[Record]:
         """Merge multiple sorted iterators, keeping newest by timestamp."""
         # Build heap of (key, -ts, value, reader_idx, iterator)
         heap = []
@@ -140,7 +141,7 @@ class SimpleCompactor:
     def _write_output(self, records: Iterator[Record], level: int) -> Sequence[SSTableMeta]:
         """Write merged records to output SSTables."""
         output_metas = []
-        current_writer = None
+        current_writer: SSTableWriter | None = None
         current_size = 0
 
         for key, value, ts in records:

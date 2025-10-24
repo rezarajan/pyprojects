@@ -14,6 +14,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from ..interfaces.catalog import SSTableCatalog
+    from ..interfaces.memtable import Memtable
+    from ..interfaces.sstable import SSTableReader, SSTableWriter
+    from ..interfaces.wal import WALReader, WALWriter
     from .config import LSMConfig
     from .types import Key, Timestamp, Value
 
@@ -48,7 +52,11 @@ class SimpleLSMStore:
     """
 
     def __init__(self, config: LSMConfig):
-        """Initialize LSM store with configuration."""
+        """Initialize LSM store with configuration.
+
+        Args:
+            config: LSM configuration
+        """
         self.config: LSMConfig = config
         self.data_dir: Path = Path(config.data_dir)
         self._lock: threading.Lock = threading.Lock()
@@ -63,14 +71,17 @@ class SimpleLSMStore:
         for d in [self.wal_dir, self.sst_dir, self.meta_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
-        # Initialize components
-        self._memtable: SimpleMemtable = SimpleMemtable()
-        self._wal: SimpleWAL = SimpleWAL(
+        # Initialize components - typed as protocols
+        self._memtable: Memtable = SimpleMemtable()
+        # SimpleWAL satisfies both WALWriter and WALReader protocols
+        wal_impl = SimpleWAL(
             self.wal_dir / "wal-current.wal",
             rotate_bytes=config.wal_file_rotate_bytes,
             flush_every_write=config.wal_flush_every_write,
         )
-        self._catalog: SimpleSSTableCatalog = SimpleSSTableCatalog(
+        self._wal: WALWriter = wal_impl
+        self._wal_reader: WALReader = wal_impl
+        self._catalog: SSTableCatalog = SimpleSSTableCatalog(
             self.meta_dir / "catalog.json", max_levels=config.max_levels
         )
         self._compactor: SimpleCompactor = SimpleCompactor(config, self.sst_dir)
@@ -87,7 +98,7 @@ class SimpleLSMStore:
 
         try:
             count = 0
-            for key, value, ts in self._wal:
+            for key, value, ts in self._wal_reader:
                 if value is not None:
                     self._memtable.put(key, value, ts)
                 else:
@@ -148,7 +159,9 @@ class SimpleLSMStore:
         for level in range(self.config.max_levels):
             sstables = self._catalog.list_level(level)
             for meta in reversed(sstables):
-                reader = SimpleSSTableReader(meta["data_path"], meta["meta_path"])
+                reader: SSTableReader = SimpleSSTableReader(
+                    meta["data_path"], meta["meta_path"]
+                )
                 try:
                     result = reader.get(key)
                     if result is not None:
@@ -168,7 +181,9 @@ class SimpleLSMStore:
         for level in range(self.config.max_levels):
             sstables = self._catalog.list_level(level)
             for meta in reversed(sstables):
-                reader = SimpleSSTableReader(meta["data_path"], meta["meta_path"])
+                reader: SSTableReader = SimpleSSTableReader(
+                    meta["data_path"], meta["meta_path"]
+                )
                 try:
                     result = reader.get(key)
                     if result is not None:
@@ -191,7 +206,9 @@ class SimpleLSMStore:
         for level in range(self.config.max_levels):
             sstables = self._catalog.list_level(level)
             for meta in sstables:
-                reader = SimpleSSTableReader(meta["data_path"], meta["meta_path"])
+                reader: SSTableReader = SimpleSSTableReader(
+                    meta["data_path"], meta["meta_path"]
+                )
                 try:
                     for key, value, ts in reader.iter_range(start, end):
                         if key not in all_records or ts > all_records[key][1]:
@@ -222,7 +239,9 @@ class SimpleLSMStore:
         data_path = self.sst_dir / f"sst-0-{self._sstable_counter}.data"
         meta_path = self.sst_dir / f"sst-0-{self._sstable_counter}.meta"
 
-        writer = SimpleSSTableWriter(data_path, meta_path, self.config.bloom_false_positive_rate)
+        writer: SSTableWriter = SimpleSSTableWriter(
+            data_path, meta_path, self.config.bloom_false_positive_rate
+        )
 
         # Write all memtable records
         for key, value, ts in self._memtable.items():
@@ -239,11 +258,13 @@ class SimpleLSMStore:
         self._wal.close()
 
         # Open new WAL
-        self._wal = SimpleWAL(
+        wal_impl = SimpleWAL(
             self.wal_dir / f"wal-{self._sstable_counter}.wal",
             rotate_bytes=self.config.wal_file_rotate_bytes,
             flush_every_write=self.config.wal_flush_every_write,
         )
+        self._wal = wal_impl
+        self._wal_reader = wal_impl
 
         logger.info(f"Flushed memtable to {data_path}")
 

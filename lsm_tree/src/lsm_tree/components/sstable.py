@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ..core.types import Key, Record, SSTableMeta, Timestamp, Value
+    from ..interfaces.bloom import BloomFilter
 
 from ..core.errors import SSTableError
 from .bloom import SimpleBloomFilter
@@ -126,7 +127,7 @@ class SimpleSSTableWriter:
         data_size = self.data_path.stat().st_size
 
         # Build bloom filter
-        bloom = SimpleBloomFilter(max(1, len(self._keys_for_bloom)), self.bloom_fpr)
+        bloom: BloomFilter = SimpleBloomFilter(max(1, len(self._keys_for_bloom)), self.bloom_fpr)
         for key in self._keys_for_bloom:
             bloom.add(key)
         bloom_data = bloom.serialize()
@@ -178,7 +179,7 @@ class SimpleSSTableReader:
             json_bytes = f.read(json_len)
             self.meta: SSTableMeta = json.loads(json_bytes.decode("utf-8"))
             bloom_data = f.read()
-            self._bloom: SimpleBloomFilter = SimpleBloomFilter.deserialize(bloom_data)
+            self._bloom: BloomFilter = SimpleBloomFilter.deserialize(bloom_data)
 
         # Decode index
         self._index: list[tuple[Key, int]] = [
