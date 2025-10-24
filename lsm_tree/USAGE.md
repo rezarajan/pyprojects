@@ -116,14 +116,76 @@ Read Path: User → Memtable → Level 0 → Level 1 → ... → Level N
 
 ## Testing
 
-Run all tests:
+The project includes a comprehensive test suite organized into three categories:
+- **Unit Tests**: Component-level testing (WAL, Memtable, Bloom Filter)
+- **Integration Tests**: End-to-end workflow testing
+- **Performance Tests**: Benchmarks and stress testing
+
+### Test Scripts
+
+**Quick Testing (Recommended):**
 ```bash
-pytest tests/ -v
+# Run all fast tests (unit + integration)
+./tools/scripts/run_tests.sh fast
+
+# Run with verbose output
+./tools/scripts/run_tests.sh fast -v
 ```
 
-Run integration tests:
+**Specific Test Categories:**
 ```bash
-pytest tests/test_lsm_integration.py -v
+# Unit tests only (49 tests)
+./tools/scripts/run_tests.sh unit
+
+# Integration tests only (16 tests)
+./tools/scripts/run_tests.sh integration
+
+# Performance benchmarks (7 tests)
+./tools/scripts/run_tests.sh performance
+
+# All tests including slow performance tests
+./tools/scripts/run_tests.sh all
+```
+
+**Comprehensive Validation:**
+```bash
+# Complete implementation validation
+# Includes: linting, type checking, all tests, component validation,
+# acceptance criteria verification, and performance benchmarks
+./tools/scripts/validate_implementation.sh
+```
+
+### Direct pytest Usage
+
+You can also run tests directly with pytest:
+
+```bash
+# All fast tests
+pytest tests/unit/ tests/integration/ -v
+
+# Specific test files
+pytest tests/unit/test_wal.py -v
+pytest tests/integration/test_lsm_integration.py -v
+
+# Performance tests with output
+pytest tests/performance/ -v -s
+
+# Run tests with coverage
+pytest tests/ --cov=lsm_tree --cov-report=html
+```
+
+### Test Structure
+
+```
+tests/
+├── unit/                     # Component unit tests (49 tests)
+│   ├── test_wal.py          # Write-Ahead Log tests (13 tests)
+│   ├── test_memtable.py     # Memtable tests (19 tests)
+│   └── test_bloom.py        # Bloom Filter tests (17 tests)
+├── integration/              # End-to-end tests (16 tests)
+│   └── test_lsm_integration.py
+└── performance/              # Benchmarks (7 tests)
+    └── test_benchmarks.py
 ```
 
 ## Configuration Options
@@ -157,6 +219,128 @@ LSMConfig(
 - **Point Reads**: O(log N) with bloom filter pruning
 - **Range Scans**: O(N + M) where M is result size
 - **Compaction**: O(N log N) per level
+
+## Development Scripts
+
+The project includes several utility scripts in `tools/scripts/`:
+
+### Test Runner (`run_tests.sh`)
+
+Comprehensive test runner with multiple modes:
+
+```bash
+./tools/scripts/run_tests.sh [unit|integration|performance|fast|all] [-v|--verbose]
+```
+
+**Options:**
+- `unit` - Run unit tests only (49 tests)
+- `integration` - Run integration tests only (16 tests)  
+- `performance` - Run performance tests only (7 tests)
+- `fast` - Run unit + integration tests (recommended for development)
+- `all` - Run all tests including slow performance tests
+- `-v`, `--verbose` - Enable verbose output
+
+**Examples:**
+```bash
+# Quick development testing
+./tools/scripts/run_tests.sh fast
+
+# Detailed unit test output
+./tools/scripts/run_tests.sh unit -v
+
+# Full test suite
+./tools/scripts/run_tests.sh all
+```
+
+### Implementation Validator (`validate_implementation.sh`)
+
+Comprehensive validation script that runs:
+- Dependency checks
+- Code linting (if `ruff` available)
+- Type checking (if `mypy` available)
+- Test structure validation
+- Complete test suite
+- Component API validation
+- Acceptance criteria verification
+- Performance benchmarks
+
+```bash
+./tools/scripts/validate_implementation.sh
+```
+
+**Sample Output:**
+```
+🔍 LSM Tree Implementation Validation
+=====================================
+📦 Checking dependencies...
+📁 Validating test structure...
+✅ Test structure validated
+
+🧪 Running Test Suite
+======================
+1️⃣  Unit Tests...
+📋 Running unit tests only...
+================================================ test session starts ================================================
+.................................................                                             [100%]
+49 passed in 0.05s
+✅ Tests completed!
+
+🏗️  Component Validation
+=======================
+🔧 Testing LSM Store API...
+✅ LSM Store API validation passed
+💾 Testing WAL durability...
+✅ WAL durability validation passed
+...
+
+🎉 Implementation Validation Summary
+====================================
+✅ All tests passed
+✅ Component APIs validated
+✅ Acceptance criteria met
+🚀 LSM Tree implementation is ready for use!
+```
+
+### Other Available Scripts
+
+```bash
+# Generate documentation (if available)
+./tools/scripts/gen_docs.sh
+
+# Bootstrap development environment
+./tools/scripts/bootstrap.sh
+```
+
+## Development Workflow
+
+**Recommended development cycle:**
+
+1. **Make changes** to implementation
+2. **Quick validation:**
+   ```bash
+   ./tools/scripts/run_tests.sh fast
+   ```
+3. **Full validation before commit:**
+   ```bash
+   ./tools/scripts/validate_implementation.sh
+   ```
+4. **Performance testing** (if needed):
+   ```bash
+   ./tools/scripts/run_tests.sh performance
+   ```
+
+**CI/CD Integration:**
+
+The scripts are designed for CI/CD integration:
+
+```yaml
+# Example GitHub Actions usage
+- name: Run fast tests
+  run: ./tools/scripts/run_tests.sh fast
+
+- name: Full validation
+  run: ./tools/scripts/validate_implementation.sh
+```
 
 ## Limitations
 

@@ -9,7 +9,7 @@ import time
 import logging
 from pathlib import Path
 from typing import Sequence, Iterator
-from ..core.types import Key, Value, Timestamp, Record, SSTableMeta
+from ..core.types import Key, Value, Timestamp, SSTableMeta
 from ..core.errors import CompactionError
 from ..core.config import LSMConfig
 from .sstable import SimpleSSTableWriter, SimpleSSTableReader

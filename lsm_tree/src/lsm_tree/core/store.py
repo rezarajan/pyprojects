@@ -10,7 +10,7 @@ import logging
 import threading
 from pathlib import Path
 from typing import Iterator
-from .types import Key, Value, Timestamp, Record
+from .types import Key, Value, Timestamp
 from .config import LSMConfig
 from .errors import LSMError, RecoveryError
 from ..components.wal import SimpleWAL
