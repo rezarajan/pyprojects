@@ -1,0 +1,6 @@
+name: Regenerate Docs
+description: Generate API docs with pdoc and snapshot specs.
+author: lsm_tree
+shell: bash
+command: |
+  bash tools/scripts/gen_docs.sh

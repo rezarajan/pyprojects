@@ -1,0 +1,6 @@
+name: Run All Tests
+description: Run pytest in the local virtual environment.
+author: lsm_tree
+shell: bash
+command: |
+  bash tools/scripts/run_tests.sh

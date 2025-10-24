@@ -1,0 +1,6 @@
+name: Run AI Agent
+description: Read docs and generate code/tests into src/ and tests/.
+author: lsm_tree
+shell: bash
+command: |
+  bash ai/run_agent.sh

@@ -1,0 +1,6 @@
+name: AI Project Bootstrap
+description: Initialize venv with uv, install deps, and scaffold folders.
+author: lsm_tree
+shell: bash
+command: |
+  bash tools/scripts/bootstrap.sh

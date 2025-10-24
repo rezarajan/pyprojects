@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.env.*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+
+# uv
+.python-version
+
+# VSCode / IDE
+.vscode/
+.idea/
+
+# Logs and build artifacts
+ai/logs/
+docs/build/
+*.log
+
+# LSM data directories (test artifacts)
+data/
+*.wal
+*.sst
+*.data
+*.meta
+
+# macOS/Linux
+.DS_Store
+*~
