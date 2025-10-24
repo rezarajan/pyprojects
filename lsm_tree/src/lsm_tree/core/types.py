@@ -4,13 +4,12 @@ Defines fundamental types used across all components.
 """
 
 from __future__ import annotations
-from typing import Optional
 
 # Core primitive types
 Key = bytes
 Value = bytes
 Timestamp = int
-Record = tuple[Key, Optional[Value], Timestamp]
+Record = tuple[Key, Value | None, Timestamp]
 
 # Metadata types
 SSTableMeta = dict[str, any]

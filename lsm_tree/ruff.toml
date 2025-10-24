@@ -1,0 +1,75 @@
+line-length = 100
+target-version = "py310"
+
+[lint]
+select = [
+    # Pyflakes
+    "F",
+    # Pycodestyle
+    "E", "W",
+    # Isort
+    "I",
+    # Pep8-naming
+    "N",
+    # Pyupgrade
+    "UP",
+    # Flake8-bugbear
+    "B",
+    # Flake8-bandit (security)
+    "S",
+    # Flake8-comprehensions
+    "C4",
+    # Flake8-docstrings
+    "D",
+    # Flake8-pytest-style
+    "PT",
+    # Flake8-unused-arguments
+    "ARG",
+    # Flake8-use-pathlib
+    "PTH",
+    # Refactor
+    "RET", "SIM", "TCH", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "PERF", "RUF"
+]
+
+ignore = [
+    # Allow non-lowercase variable names in tests
+    "N806",
+    # Allow assert statements in tests
+    "S101", 
+    # Allow print statements for now
+    "T201",
+    # Allow missing docstrings in tests
+    "D100", "D103", "D104", 
+    # Allow relative imports
+    "TID252",
+    # Allow long docstrings
+    "D213",
+    # Allow magic values in tests
+    "PLR2004",
+    # Allow many locals/arguments in complex functions
+    "PLR0913", "PLR0912", "PLR0915",
+    # Allow subprocess without shell=False check
+    "S603", "S607",
+    # Docstring style preferences
+    "D203", "D213", "D215", "D400", "D401", "D404", "D406", "D407", "D408", "D409", "D413",
+]
+
+[lint.per-file-ignores]
+"tests/**" = [
+    # Tests can have many assertions and complex functions
+    "PLR2004", "PLR0913", "PLR0912", "PLR0915",
+    # Tests don't need full docstring coverage
+    "D",
+    # Allow hardcoded temp directories
+    "S108",
+    # Allow assert statements
+    "S101",
+]
+
+[lint.pydocstyle]
+convention = "google"
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
