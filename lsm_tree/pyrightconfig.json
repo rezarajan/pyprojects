@@ -1,0 +1,17 @@
+{
+  "include": ["src", "ai"],
+  "exclude": ["**/__pycache__", ".venv"],
+  "pythonVersion": "3.10",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "standard",
+  "reportMissingTypeStubs": false,
+  "reportUnknownParameterType": false,
+  "reportUnknownArgumentType": false,
+  "reportUnknownVariableType": false,
+  "reportUnknownMemberType": false,
+  "reportAny": false,
+  "reportPrivateUsage": "warning",
+  "reportUnusedCallResult": false,
+  "reportUnusedVariable": "warning",
+  "reportUnusedImport": "warning"
+}

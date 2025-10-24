@@ -9,11 +9,15 @@ import logging
 import os
 import struct
 import zlib
-from collections.abc import Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from ..core.types import Key, Record, Timestamp, Value
 
 from ..core.errors import WALCorruptionError
-from ..core.types import Key, Record, Timestamp, Value
 
 logger = logging.getLogger(__name__)
 
@@ -43,19 +47,20 @@ class SimpleWAL:
         self,
         path: str | Path,
         rotate_bytes: int = 64 * 1024 * 1024,
-        flush_every_write: bool = True,
+        flush_every_write: bool = False,
     ):
-        self.path = Path(path)
-        self.rotate_bytes = rotate_bytes
-        self.flush_every_write = flush_every_write
-        self.sequence = 0
+        """Initialize WAL with path and configuration."""
+        self.path: Path = Path(path)
+        self.rotate_bytes: int = rotate_bytes
+        self.flush_every_write: bool = flush_every_write
+        self.sequence: int = 0
         self._fd = None
         self._open_for_write()
 
     def _open_for_write(self) -> None:
         """Open WAL file for appending."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._fd = open(self.path, "ab")
+        self._fd = self.path.open("ab")
         # Determine sequence from file size
         self._fd.seek(0, os.SEEK_END)
         pos = self._fd.tell()
@@ -73,7 +78,7 @@ class SimpleWAL:
             WAL sequence number
         """
         if self._fd is None:
-            raise RuntimeError("WAL is closed")
+            raise RuntimeError("WAL is closed")  # noqa: TRY003
 
         op_code = OP_DELETE if value is None else OP_PUT
         value_bytes = value if value is not None else b""
@@ -125,7 +130,7 @@ class SimpleWAL:
 
         Skips partial records at EOF.
         """
-        with open(self.path, "rb") as f:
+        with self.path.open("rb") as f:
             while True:
                 # Read magic
                 magic_bytes = f.read(4)
@@ -137,7 +142,7 @@ class SimpleWAL:
 
                 magic = struct.unpack("<I", magic_bytes)[0]
                 if magic != MAGIC:
-                    raise WALCorruptionError(f"Invalid magic: {magic:x}")
+                    raise WALCorruptionError(f"Invalid magic: {magic:x}")  # noqa: TRY003
 
                 # Read key length
                 key_len_bytes = f.read(8)
@@ -198,17 +203,19 @@ class SimpleWAL:
                 )
                 computed_crc = zlib.crc32(payload)
                 if stored_crc != computed_crc:
-                    raise WALCorruptionError(
-                        f"CRC mismatch: expected {computed_crc:x}, got {stored_crc:x}"
-                    )
+                      raise WALCorruptionError(  # noqa: TRY003
+                          f"CRC mismatch: expected {computed_crc:x}, got {stored_crc:x}"
+                      )
 
                 # Yield record
                 value = value_bytes if op_code == OP_PUT else None
                 yield (key, value, ts)
 
     def __enter__(self):
+        """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> bool:
+        """Context manager exit."""
         self.close()
         return False

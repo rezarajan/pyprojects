@@ -5,11 +5,14 @@ Uses sortedcontainers.SortedDict for efficient sorted operations.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
+from typing import TYPE_CHECKING
 
 from sortedcontainers import SortedDict
 
-from ..core.types import Key, Record, Timestamp, Value
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+
+    from ..core.types import Key, Record, Timestamp, Value
 
 
 class SimpleMemtable:
@@ -25,15 +28,15 @@ class SimpleMemtable:
     """
 
     def __init__(self):
-        # SortedDict[Key, tuple[Value | None, Timestamp]]
+        """Initialize empty memtable."""
         self._data: SortedDict = SortedDict()
-        self._size_bytes = 0
+        self._size_bytes: int = 0
 
     def put(self, key: Key, value: Value, ts: Timestamp) -> None:
         """Insert or update key with value and timestamp."""
         # Track size delta
         if key in self._data:
-            old_value, old_ts = self._data[key]
+            old_value, _old_ts = self._data[key]
             old_size = len(key) + (len(old_value) if old_value else 0) + 8
             self._size_bytes -= old_size
 
@@ -45,7 +48,7 @@ class SimpleMemtable:
         """Mark key as tombstone with timestamp."""
         # Track size delta
         if key in self._data:
-            old_value, old_ts = self._data[key]
+            old_value, _old_ts = self._data[key]
             old_size = len(key) + (len(old_value) if old_value else 0) + 8
             self._size_bytes -= old_size
 

@@ -133,10 +133,7 @@ def test_bloom_filter_optimal_sizing():
     bf = SimpleBloomFilter(expected_elements, fpr)
 
     # Calculate theoretical optimal values
-    # m = -n * ln(p) / (ln(2)^2)
     expected_m = int(-expected_elements * math.log(fpr) / (math.log(2) ** 2))
-
-    # k = (m/n) * ln(2)
     expected_k = int((expected_m / expected_elements) * math.log(2))
 
     # Our values should be close to optimal

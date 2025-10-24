@@ -4,25 +4,23 @@
 Reads specs from docs/, scaffolds modules, and optionally uses LLM to suggest tasks.
 """
 from __future__ import annotations
+
+import logging
 import os
+import pathlib
 import sys
 import time
-import logging
-import pathlib
-from typing import Optional, Dict, Any, List
 
 try:
-    import yaml  # type: ignore
+    import yaml  # type: ignore[import-not-found]
 except ImportError:
     yaml = None
 
 # Optional OpenAI client
-OPENAI_AVAILABLE = False
 try:
-    from openai import OpenAI  # type: ignore
-    OPENAI_AVAILABLE = True
-except ImportError:
-    pass
+    from openai import OpenAI  # type: ignore[import-not-found]
+except Exception:  # pragma: no cover - optional dependency
+    OpenAI = None  # type: ignore[assignment]
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DOCS_DIR = ROOT / "docs"
@@ -57,18 +55,18 @@ def load_text(path: pathlib.Path) -> str:
         return ""
 
 
-def load_docs() -> Dict[str, str]:
+def load_docs() -> dict[str, str]:
     """Load all markdown docs from docs/ directory."""
-    docs = {}
+    docs: dict[str, str] = {}
     if DOCS_DIR.exists():
         for p in sorted(DOCS_DIR.glob("*.md")):
             docs[p.name] = load_text(p)
     return docs
 
 
-def load_config() -> Dict[str, Any]:
+def load_config() -> dict[str, str | float | int]:
     """Load agent configuration from YAML."""
-    cfg: Dict[str, Any] = {
+    cfg: dict[str, str | float | int] = {
         "model": "gpt-4o-mini",
         "temperature": 0.2,
         "max_output_tokens": 2000,
@@ -90,7 +88,7 @@ def ensure_scaffold() -> None:
     (SRC_DIR / "interfaces").mkdir(parents=True, exist_ok=True)
     (SRC_DIR / "core").mkdir(parents=True, exist_ok=True)
     TESTS_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     # Create __init__.py files
     for sub in (SRC_DIR, SRC_DIR / "components", SRC_DIR / "interfaces", SRC_DIR / "core"):
         init = sub / "__init__.py"
@@ -118,12 +116,12 @@ def ensure_scaffold() -> None:
         SRC_DIR / "interfaces" / "catalog.py",
         SRC_DIR / "interfaces" / "store.py",
     ]
-    
+
     for f in files:
         if not f.exists():
             f.write_text(
                 f'"""\nAuto-generated placeholder: {f.name}\n\n'
-                f'Refer to docs/ and implement according to specs.\n"""\n',
+                + 'Refer to docs/ and implement according to specs.\n"""\n',
                 encoding="utf-8",
             )
 
@@ -132,14 +130,14 @@ def ensure_scaffold() -> None:
     if not smoke.exists():
         smoke.write_text(
             '"""Smoke test to verify package imports."""\n'
-            'import importlib\n\n'
-            'def test_import():\n'
-            '    assert importlib.import_module("lsm_tree")\n',
+            + 'import importlib\n\n'
+            + 'def test_import():\n'
+            + '    assert importlib.import_module("lsm_tree")\n',
             encoding="utf-8",
         )
 
 
-def generate_interface_skeletons(docs: Dict[str, str]) -> None:
+def generate_interface_skeletons(_docs: dict[str, str]) -> None:
     """Generate Protocol interface skeletons based on API spec."""
     interfaces = {
         "wal.py": '''"""WAL (Write-Ahead Log) interface protocols."""
@@ -198,7 +196,7 @@ SSTableMeta = Mapping[str, Any]
 
 class SSTableReader(Protocol):
     meta: SSTableMeta
-    
+
     def may_contain(self, key: Key) -> bool: ...
     def get(self, key: Key) -> Optional[tuple[Optional[Value], Timestamp]]: ...
     def iter_range(self, start: Optional[Key], end: Optional[Key]) -> Iterator[Record]: ...
@@ -220,7 +218,7 @@ class BloomFilter(Protocol):
     def add(self, key: Key) -> None: ...
     def __contains__(self, key: Key) -> bool: ...
     def serialize(self) -> bytes: ...
-    
+
     @classmethod
     def deserialize(cls, data: bytes) -> "BloomFilter": ...
 ''',
@@ -260,13 +258,17 @@ class LSMStore(Protocol):
     def put(self, key: Key, value: Value) -> None: ...
     def delete(self, key: Key) -> None: ...
     def get(self, key: Key) -> Optional[Value]: ...
-    def get_with_meta(self, key: Key) -> Optional[tuple[Optional[Value], Timestamp]]: ...
-    def range(self, start: Optional[Key], end: Optional[Key]) -> Iterator[tuple[Key, Optional[Value]]]: ...
+    def get_with_meta(
+        self, key: Key
+    ) -> Optional[tuple[Optional[Value], Timestamp]]: ...
+    def range(
+        self, start: Optional[Key], end: Optional[Key]
+    ) -> Iterator[tuple[Key, Optional[Value]]]: ...
     def compact_level(self, level: int) -> None: ...
     def flush_memtable(self) -> None: ...
 ''',
     }
-    
+
     for name, content in interfaces.items():
         path = SRC_DIR / "interfaces" / name
         if not path.exists() or len(path.read_text(encoding="utf-8").strip()) < 50:
@@ -386,7 +388,7 @@ def test_integration_placeholder():
     pass
 ''',
     }
-    
+
     for name, content in test_files.items():
         path = TESTS_DIR / name
         if not path.exists():
@@ -394,26 +396,27 @@ def test_integration_placeholder():
             logging.info("Generated test: %s", name)
 
 
-def llm_suggest_tasks(docs: Dict[str, str], cfg: Dict[str, Any]) -> Optional[str]:
+def llm_suggest_tasks(docs: dict[str, str], cfg: dict[str, str | float | int]) -> str | None:
     """Use LLM to suggest next implementation tasks."""
     api_key = os.getenv("OPENAI_API_KEY")
-    if not (OPENAI_AVAILABLE and api_key):
+    if not (OpenAI and api_key):
         logging.info("LLM unavailable (no OpenAI API key or library); skipping suggestions.")
         return None
-    
+
     try:
+        assert OpenAI is not None
         client = OpenAI()
         combined = "\n\n".join([f"# {name}\n\n{content}" for name, content in docs.items()])
         system_prompt = load_text(PROMPTS_DIR / "system.md") or "You are a careful Python engineer."
-        
+
         prompt = (
             "Based on the LSM Tree specs below, suggest the next 3 concrete implementation tasks. "
-            "Include specific file paths under src/lsm_tree/ and tests under tests/. "
-            "Be concise (bullet points).\n\n" + combined
+            + "Include specific file paths under src/lsm_tree/ and tests under tests/. "
+            + "Be concise (bullet points).\n\n" + combined
         )
-        
+
         resp = client.chat.completions.create(
-            model=cfg.get("model", "gpt-4o-mini"),
+            model=str(cfg.get("model", "gpt-4o-mini")),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
@@ -421,7 +424,7 @@ def llm_suggest_tasks(docs: Dict[str, str], cfg: Dict[str, Any]) -> Optional[str
             temperature=float(cfg.get("temperature", 0.2)),
             max_tokens=int(cfg.get("max_output_tokens", 1200)),
         )
-        return resp.choices[0].message.content  # type: ignore
+        return resp.choices[0].message.content  # type: ignore[return-value]
     except Exception as e:
         logging.warning("LLM call failed: %s", e)
         return None
@@ -433,22 +436,22 @@ def main() -> int:
     logging.info("=" * 60)
     logging.info("LSM Tree AI Agent")
     logging.info("=" * 60)
-    
+
     cfg = load_config()
     logging.info("Config: model=%s, temp=%.2f", cfg.get("model"), cfg.get("temperature", 0.2))
-    
+
     docs = load_docs()
     if not docs:
         logging.warning("No docs found under %s", DOCS_DIR)
     else:
         logging.info("Loaded %d doc files", len(docs))
-    
+
     logging.info("Scaffolding project structure...")
     ensure_scaffold()
     generate_core_modules()
     generate_interface_skeletons(docs)
     generate_test_placeholders()
-    
+
     logging.info("Requesting LLM task suggestions...")
     suggestion = llm_suggest_tasks(docs, cfg)
     if suggestion:
@@ -462,7 +465,7 @@ def main() -> int:
         print("=" * 60)
     else:
         logging.info("No LLM suggestions (API unavailable or failed)")
-    
+
     logging.info("=" * 60)
     logging.info("Agent complete. Files scaffolded.")
     logging.info("Next: Implement components following docs/sequencing_plan.md")

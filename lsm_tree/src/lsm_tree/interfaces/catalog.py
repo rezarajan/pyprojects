@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from ..core.types import SSTableMeta
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from ..core.types import SSTableMeta
 
 
 class SSTableCatalog(Protocol):

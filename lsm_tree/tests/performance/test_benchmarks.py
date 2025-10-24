@@ -1,5 +1,6 @@
 """Performance benchmarks for LSM Tree implementation."""
 
+import random
 import shutil
 import tempfile
 import time
@@ -76,7 +77,6 @@ def test_random_read_performance(benchmark_store):
     benchmark_store.flush_memtable()
 
     # Random read test
-    import random
 
     random_keys = random.sample(keys, min(500, num_records))
 
@@ -136,8 +136,6 @@ def test_mixed_workload_performance(benchmark_store):
     """Benchmark mixed read/write workload."""
     num_operations = 2000
 
-    import random
-
     keys = [f"key{i:08d}".encode() for i in range(num_operations)]
     values = [f"value{i}".encode() * 5 for i in range(num_operations)]
 
@@ -150,8 +148,8 @@ def test_mixed_workload_performance(benchmark_store):
     # Mixed workload: 70% reads, 30% writes
     operations = []
     for i in range(num_operations):
-        if random.random() < 0.7:  # Read
-            key = random.choice(keys[: num_operations // 2])  # Read existing
+        if random.random() < 0.7:  # Read  # noqa: S311
+            key = random.choice(keys[: num_operations // 2])  # Read existing  # noqa: S311
             operations.append(("read", key, None))
         else:  # Write
             operations.append(("write", keys[i], values[i]))

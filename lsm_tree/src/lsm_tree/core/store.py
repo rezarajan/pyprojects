@@ -6,20 +6,23 @@ Orchestrates WAL, Memtable, SSTables, and Compaction.
 from __future__ import annotations
 
 import logging
-import os
 import threading
 import time
-from collections.abc import Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from .config import LSMConfig
+    from .types import Key, Timestamp, Value
 
 from ..components.catalog import SimpleSSTableCatalog
 from ..components.compaction import SimpleCompactor
 from ..components.memtable import SimpleMemtable
 from ..components.sstable import SimpleSSTableReader, SimpleSSTableWriter
 from ..components.wal import SimpleWAL
-from .config import LSMConfig
 from .errors import RecoveryError
-from .types import Key, Timestamp, Value
 
 logger = logging.getLogger(__name__)
 
@@ -45,32 +48,33 @@ class SimpleLSMStore:
     """
 
     def __init__(self, config: LSMConfig):
-        self.config = config
-        self.data_dir = Path(config.data_dir)
-        self._lock = threading.Lock()
-        self._timestamp_counter = int(time.time() * 1000)  # milliseconds
+        """Initialize LSM store with configuration."""
+        self.config: LSMConfig = config
+        self.data_dir: Path = Path(config.data_dir)
+        self._lock: threading.Lock = threading.Lock()
+        self._timestamp_counter: int = int(time.time() * 1000)  # milliseconds
 
         # Initialize directories
         self.data_dir.mkdir(parents=True, exist_ok=True)
-        self.wal_dir = self.data_dir / "wal"
-        self.sst_dir = self.data_dir / "sst"
-        self.meta_dir = self.data_dir / "meta"
+        self.wal_dir: Path = self.data_dir / "wal"
+        self.sst_dir: Path = self.data_dir / "sst"
+        self.meta_dir: Path = self.data_dir / "meta"
 
         for d in [self.wal_dir, self.sst_dir, self.meta_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
         # Initialize components
-        self._memtable = SimpleMemtable()
-        self._wal = SimpleWAL(
+        self._memtable: SimpleMemtable = SimpleMemtable()
+        self._wal: SimpleWAL = SimpleWAL(
             self.wal_dir / "wal-current.wal",
             rotate_bytes=config.wal_file_rotate_bytes,
             flush_every_write=config.wal_flush_every_write,
         )
-        self._catalog = SimpleSSTableCatalog(
+        self._catalog: SimpleSSTableCatalog = SimpleSSTableCatalog(
             self.meta_dir / "catalog.json", max_levels=config.max_levels
         )
-        self._compactor = SimpleCompactor(config, self.sst_dir)
-        self._sstable_counter = 0
+        self._compactor: SimpleCompactor = SimpleCompactor(config, self.sst_dir)
+        self._sstable_counter: int = 0
 
         # Recovery
         self._recover()
@@ -94,7 +98,7 @@ class SimpleLSMStore:
 
             logger.info(f"Recovered {count} records from WAL")
         except Exception as e:
-            raise RecoveryError(f"Failed to recover from WAL: {e}") from e
+            raise RecoveryError("WAL recovery failed") from e  # noqa: TRY003
 
     def _get_timestamp(self) -> Timestamp:
         """Generate monotonically increasing timestamp."""
@@ -137,7 +141,7 @@ class SimpleLSMStore:
         # Check memtable first
         result = self._memtable.get(key)
         if result is not None:
-            value, ts = result
+            value, _ts = result
             return value
 
         # Check SSTables
@@ -148,7 +152,7 @@ class SimpleLSMStore:
                 try:
                     result = reader.get(key)
                     if result is not None:
-                        value, ts = result
+                        value, _ts = result
                         return value
                 finally:
                     reader.close()
@@ -267,9 +271,9 @@ class SimpleLSMStore:
             # Delete input files
             for meta in input_tables:
                 try:
-                    os.unlink(meta["data_path"])
-                    os.unlink(meta["meta_path"])
-                except Exception as e:
+                    Path(meta["data_path"]).unlink()
+                    Path(meta["meta_path"]).unlink()
+                except Exception as e:  # noqa: PERF203
                     logger.warning(f"Failed to delete old SSTable: {e}")
 
     def close(self) -> None:
@@ -279,8 +283,10 @@ class SimpleLSMStore:
             self._wal.close()
 
     def __enter__(self):
+        """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> bool:
+        """Context manager exit."""
         self.close()
         return False

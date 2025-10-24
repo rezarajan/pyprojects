@@ -56,11 +56,15 @@ select = [
 ]
 ignore = [
     "E501",  # line too long (handled by formatter)
+    "TRY003", # long exception messages (acceptable for simple errors)
+    "PERF203", # try-except in loop (necessary for error handling)
+    "S311", # pseudo-random generators (acceptable for tests)
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
     "S101",   # assert statements ok in tests
+    "S311",   # pseudo-random generators ok in tests
     "PLR2004", # magic values ok in tests
 ]
 

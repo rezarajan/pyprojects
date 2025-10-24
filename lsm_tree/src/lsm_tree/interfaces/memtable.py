@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from ..core.types import Key, Record, Timestamp, Value
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+
+    from ..core.types import Key, Record, Timestamp, Value
 
 
 class Memtable(Protocol):

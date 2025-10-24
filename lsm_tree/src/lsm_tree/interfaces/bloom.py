@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from ..core.types import Key
+if TYPE_CHECKING:
+    from ..core.types import Key
 
 
 class BloomFilter(Protocol):

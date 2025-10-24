@@ -29,21 +29,21 @@ class SimpleBloomFilter:
 
     def __init__(self, expected_elements: int, false_positive_rate: float = 0.01):
         """Initialize Bloom filter with expected elements and false positive rate."""
-        self.expected_elements = expected_elements
-        self.false_positive_rate = false_positive_rate
+        self.expected_elements: int = expected_elements
+        self.false_positive_rate: float = false_positive_rate
 
         if expected_elements <= 0:
             expected_elements = 1
 
         # Calculate bit array size
         ln_2_squared = math.log(2) ** 2
-        self.m = max(1, int(-expected_elements * math.log(false_positive_rate) / ln_2_squared))
+        self.m: int = max(1, int(-expected_elements * math.log(false_positive_rate) / ln_2_squared))
 
         # Calculate number of hash functions
-        self.k = max(1, int((self.m / expected_elements) * math.log(2)))
+        self.k: int = max(1, int((self.m / expected_elements) * math.log(2)))
 
         # Bit array
-        self.bits = bytearray((self.m + 7) // 8)
+        self.bits: bytearray = bytearray((self.m + 7) // 8)
 
     def _hash(self, key: Key, seed: int) -> int:
         """Generate hash for key with seed."""
@@ -85,7 +85,7 @@ class SimpleBloomFilter:
         # Unpack header
         version, expected_n, fpr_int, m, k = struct.unpack("<BIQII", data[:21])
         if version != 1:
-            raise ValueError("Unsupported bloom filter version")
+            raise ValueError("Unsupported bloom filter version")  # noqa: TRY003
 
         fpr = fpr_int / 1e9
         bits = bytearray(data[21:])

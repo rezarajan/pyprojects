@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from ..core.types import Key, SSTableMeta, Timestamp, Value
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from ..core.types import Key, SSTableMeta, Timestamp, Value
 
 
 class SSTableReader(Protocol):

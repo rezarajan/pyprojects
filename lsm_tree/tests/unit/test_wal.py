@@ -120,7 +120,7 @@ def test_wal_recovery_skips_partial_records(wal_path):
     wal.close()
 
     # Truncate file to create partial record
-    with open(wal_path, "r+b") as f:
+    with Path(wal_path).open("r+b") as f:
         f.seek(0, 2)  # Go to end
         size = f.tell()
         f.truncate(size - 10)  # Remove last 10 bytes
@@ -143,13 +143,13 @@ def test_wal_corruption_detection(wal_path):
     wal.close()
 
     # Corrupt the file by changing a byte in the value area (not magic)
-    with open(wal_path, "r+b") as f:
+    with Path(wal_path).open("r+b") as f:
         f.seek(25)  # Seek to value area
         f.write(b"\xff")  # Corrupt one byte
 
     # Reading should raise WALCorruptionError
     wal = SimpleWAL(wal_path)
-    with pytest.raises(WALCorruptionError, match="CRC mismatch|Invalid magic"):
+    with pytest.raises(WALCorruptionError, match=r"CRC mismatch|Invalid magic"):
         list(wal)
 
     wal.close()
@@ -162,7 +162,7 @@ def test_wal_invalid_magic(wal_path):
     wal.close()
 
     # Corrupt magic number
-    with open(wal_path, "r+b") as f:
+    with Path(wal_path).open("r+b") as f:
         f.seek(0)
         f.write(struct.pack("<I", 0xDEADBEEF))  # Wrong magic
 

@@ -9,11 +9,15 @@ import json
 import logging
 import os
 import struct
-from collections.abc import Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING, BinaryIO
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from ..core.types import Key, Record, SSTableMeta, Timestamp, Value
 
 from ..core.errors import SSTableError
-from ..core.types import Key, Record, SSTableMeta, Timestamp, Value
 from .bloom import SimpleBloomFilter
 
 logger = logging.getLogger(__name__)
@@ -42,19 +46,20 @@ class SimpleSSTableWriter:
         bloom_fpr: float = 0.01,
         index_interval: int = 100,
     ):
-        self.data_path = Path(data_path)
-        self.meta_path = Path(meta_path)
-        self.bloom_fpr = bloom_fpr
-        self.index_interval = index_interval
+        """Initialize SSTable writer."""
+        self.data_path: Path = Path(data_path)
+        self.meta_path: Path = Path(meta_path)
+        self.bloom_fpr: float = bloom_fpr
+        self.index_interval: int = index_interval
 
         self.data_path.parent.mkdir(parents=True, exist_ok=True)
-        self._fd = open(self.data_path, "wb")
+        self._fd: BinaryIO | None = self.data_path.open("wb")
 
         self._min_key: Key | None = None
         self._max_key: Key | None = None
         self._min_ts: Timestamp | None = None
         self._max_ts: Timestamp | None = None
-        self._count = 0
+        self._count: int = 0
         self._last_key: Key | None = None
 
         # Index: list of (key, offset)
@@ -67,17 +72,21 @@ class SimpleSSTableWriter:
         """Append record to the writer (must be added in sorted order)."""
         # Verify sorted order
         if self._last_key is not None and key <= self._last_key:
-            raise SSTableError(f"Keys must be added in sorted order: {self._last_key} >= {key}")
+            raise SSTableError("Unsorted keys")  # noqa: TRY003
 
         # Record current offset
-        offset = self._fd.tell()
+        if self._fd is None:
+            msg = "Writer closed"
+            raise SSTableError(msg)
+        fd = self._fd
+        offset = fd.tell()
 
         # Update metadata
         if self._min_key is None:
             self._min_key = key
         self._max_key = key
 
-        if self._min_ts is None:
+        if self._min_ts is None or self._max_ts is None:
             self._min_ts = ts
             self._max_ts = ts
         else:
@@ -96,11 +105,11 @@ class SimpleSSTableWriter:
         key_len = len(key)
         value_len = len(value_bytes)
 
-        self._fd.write(struct.pack("<Q", key_len))
-        self._fd.write(key)
-        self._fd.write(struct.pack("<Q", value_len))
-        self._fd.write(value_bytes)
-        self._fd.write(struct.pack("<Q", ts))
+        fd.write(struct.pack("<Q", key_len))
+        fd.write(key)
+        fd.write(struct.pack("<Q", value_len))
+        fd.write(value_bytes)
+        fd.write(struct.pack("<Q", ts))
 
         self._count += 1
         self._last_key = key
@@ -108,7 +117,7 @@ class SimpleSSTableWriter:
     def finalize(self) -> SSTableMeta:
         """Flush and write index/filter/footer. Return metadata for registry."""
         if self._fd is None:
-            raise SSTableError("Writer already finalized")
+            raise SSTableError("Finalized")
 
         # Close data file
         self._fd.close()
@@ -136,7 +145,7 @@ class SimpleSSTableWriter:
         }
 
         # Write meta file (JSON + bloom filter)
-        with open(self.meta_path, "wb") as f:
+        with self.meta_path.open("wb") as f:
             json_bytes = json.dumps(meta).encode("utf-8")
             f.write(struct.pack("<I", len(json_bytes)))
             f.write(json_bytes)
@@ -159,30 +168,37 @@ class SimpleSSTableReader:
     """
 
     def __init__(self, data_path: str | Path, meta_path: str | Path):
-        self.data_path = Path(data_path)
-        self.meta_path = Path(meta_path)
+        """Initialize SSTable reader."""
+        self.data_path: Path = Path(data_path)
+        self.meta_path: Path = Path(meta_path)
 
         # Load metadata and bloom filter
-        with open(self.meta_path, "rb") as f:
+        with self.meta_path.open("rb") as f:
             json_len = struct.unpack("<I", f.read(4))[0]
             json_bytes = f.read(json_len)
-            self.meta = json.loads(json_bytes.decode("utf-8"))
+            self.meta: SSTableMeta = json.loads(json_bytes.decode("utf-8"))
             bloom_data = f.read()
-            self._bloom = SimpleBloomFilter.deserialize(bloom_data)
+            self._bloom: SimpleBloomFilter = SimpleBloomFilter.deserialize(bloom_data)
 
         # Decode index
-        self._index = [(bytes.fromhex(k), offset) for k, offset in self.meta["index"]]
+        self._index: list[tuple[Key, int]] = [
+            (bytes.fromhex(k), offset) for k, offset in self.meta["index"]
+        ]
 
         # Decode min/max keys
-        self._min_key = bytes.fromhex(self.meta["min_key"]) if self.meta["min_key"] else None
-        self._max_key = bytes.fromhex(self.meta["max_key"]) if self.meta["max_key"] else None
+        self._min_key: Key | None = (
+            bytes.fromhex(self.meta["min_key"]) if self.meta["min_key"] else None
+        )
+        self._max_key: Key | None = (
+            bytes.fromhex(self.meta["max_key"]) if self.meta["max_key"] else None
+        )
 
-        self._fd = None
+        self._fd: BinaryIO | None = None
 
     def _ensure_open(self) -> None:
         """Lazily open data file."""
         if self._fd is None:
-            self._fd = open(self.data_path, "rb")
+            self._fd = self.data_path.open("rb")
 
     def may_contain(self, key: Key) -> bool:
         """Use Bloom filter to test potential presence."""
@@ -202,10 +218,11 @@ class SimpleSSTableReader:
 
         # Binary search in sparse index
         offset = self._find_block_offset(key)
-        if offset is None:
-            return None
 
         # Scan from offset
+        if self._fd is None:
+            self._ensure_open()
+        assert self._fd is not None
         self._fd.seek(offset)
 
         while True:
@@ -235,7 +252,7 @@ class SimpleSSTableReader:
 
         return None
 
-    def _find_block_offset(self, key: Key) -> int | None:
+    def _find_block_offset(self, key: Key) -> int:
         """Find starting offset for scanning."""
         if not self._index:
             return 0
@@ -261,11 +278,11 @@ class SimpleSSTableReader:
         self._ensure_open()
 
         # Find starting offset
-        if start is not None:
-            offset = self._find_block_offset(start)
-        else:
-            offset = 0
+        offset = self._find_block_offset(start) if start is not None else 0
 
+        if self._fd is None:
+            self._ensure_open()
+        assert self._fd is not None
         self._fd.seek(offset)
 
         while True:
@@ -299,13 +316,15 @@ class SimpleSSTableReader:
 
     def close(self) -> None:
         """Release file descriptors."""
-        if self._fd:
+        if self._fd is not None:
             self._fd.close()
             self._fd = None
 
     def __enter__(self):
+        """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> bool:
+        """Context manager exit."""
         self.close()
         return False

@@ -9,10 +9,13 @@ import json
 import logging
 import os
 import threading
-from collections.abc import Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from ..core.types import SSTableMeta
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from ..core.types import SSTableMeta
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +34,10 @@ class SimpleSSTableCatalog:
     """
 
     def __init__(self, catalog_path: str | Path, max_levels: int = 6):
-        self.catalog_path = Path(catalog_path)
-        self.max_levels = max_levels
-        self._lock = threading.Lock()
+        """Initialize catalog with path and max levels."""
+        self.catalog_path: Path = Path(catalog_path)
+        self.max_levels: int = max_levels
+        self._lock: threading.Lock = threading.Lock()
 
         # In-memory state: level -> list of SSTableMeta
         self._levels: dict[int, list[SSTableMeta]] = {i: [] for i in range(max_levels)}
@@ -48,28 +52,28 @@ class SimpleSSTableCatalog:
             return
 
         try:
-            with open(self.catalog_path) as f:
+            with self.catalog_path.open() as f:
                 data = json.load(f)
                 for level_str, metas in data.items():
                     level = int(level_str)
                     if 0 <= level < self.max_levels:
                         self._levels[level] = metas
             logger.info(f"Loaded catalog from {self.catalog_path}")
-        except Exception as e:
-            logger.error(f"Failed to load catalog: {e}")
+        except Exception:
+            logger.exception("Failed to load catalog")
             raise
 
     def _save(self) -> None:
         """Save catalog to disk atomically."""
         # Write to temp file
         temp_path = self.catalog_path.with_suffix(".tmp")
-        with open(temp_path, "w") as f:
+        with temp_path.open("w") as f:
             json.dump(self._levels, f, indent=2)
             f.flush()
             os.fsync(f.fileno())
 
         # Atomic rename
-        os.replace(temp_path, self.catalog_path)
+        temp_path.replace(self.catalog_path)
         logger.debug(f"Saved catalog to {self.catalog_path}")
 
     def list_level(self, level: int) -> Sequence[SSTableMeta]:
@@ -83,7 +87,7 @@ class SimpleSSTableCatalog:
         """Atomically register a new SSTable in level."""
         with self._lock:
             if not (0 <= level < self.max_levels):
-                raise ValueError(f"Invalid level: {level}")
+                raise ValueError("Level out of range")  # noqa: TRY003
 
             self._levels[level].append(meta)
             self._save()
@@ -109,6 +113,5 @@ class SimpleSSTableCatalog:
         with self._lock:
             result = []
             for level in range(self.max_levels):
-                for meta in self._levels[level]:
-                    result.append((level, meta))
+                result.extend((level, meta) for meta in self._levels[level])
             return result

@@ -5,7 +5,10 @@ Provides in-memory index for efficient key lookups in SSTables.
 
 from __future__ import annotations
 
-from ..core.types import Key
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..core.types import Key
 
 
 class SimpleSSTableIndex:
@@ -16,7 +19,8 @@ class SimpleSSTableIndex:
     """
 
     def __init__(self, index_entries: list[tuple[Key, int]]):
-        self._index = sorted(index_entries, key=lambda x: x[0])
+        """Initialize index with sorted key-offset pairs."""
+        self._index: list[tuple[Key, int]] = sorted(index_entries, key=lambda x: x[0])
 
     def find_block_offset(self, key: Key) -> int | None:
         """Return best-guess file offset for this key.

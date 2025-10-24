@@ -8,11 +8,15 @@ from __future__ import annotations
 import heapq
 import logging
 import time
-from collections.abc import Iterator, Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from ..core.config import LSMConfig
-from ..core.types import SSTableMeta, Timestamp
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
+
+    from ..core.config import LSMConfig
+    from ..core.types import Record, SSTableMeta, Timestamp
+
 from .sstable import SimpleSSTableReader, SimpleSSTableWriter
 
 logger = logging.getLogger(__name__)
@@ -27,9 +31,10 @@ class SimpleCompactor:
     """
 
     def __init__(self, config: LSMConfig, data_dir: str | Path):
-        self.config = config
-        self.data_dir = Path(data_dir)
-        self._sstable_counter = 0
+        """Initialize compactor with config and data directory."""
+        self.config: LSMConfig = config
+        self.data_dir: Path = Path(data_dir)
+        self._sstable_counter: int = 0
 
     def compact(
         self, input_tables: Sequence[SSTableMeta], target_level: int
@@ -69,7 +74,7 @@ class SimpleCompactor:
             for reader in readers:
                 reader.close()
 
-    def _merge_iterators(self, readers: Sequence[SimpleSSTableReader]) -> Iterator[tuple]:
+    def _merge_iterators(self, readers: Sequence[SimpleSSTableReader]) -> Iterator[Record]:
         """Merge multiple sorted iterators, keeping newest by timestamp."""
         # Build heap of (key, -ts, value, reader_idx, iterator)
         heap = []
@@ -80,7 +85,7 @@ class SimpleCompactor:
             try:
                 key, value, ts = next(it)
                 heapq.heappush(heap, (key, -ts, value, idx, it))
-            except StopIteration:
+            except StopIteration:  # noqa: PERF203
                 pass
 
         last_key = None
@@ -101,6 +106,7 @@ class SimpleCompactor:
             # Emit if key changed and we have a value to emit
             if last_key is not None and key != last_key:
                 # Check if tombstone should be kept
+                assert last_ts is not None
                 if last_value is not None or self._should_keep_tombstone(last_ts):
                     yield (last_key, last_value, last_ts)
                 last_key = None
@@ -115,9 +121,15 @@ class SimpleCompactor:
                 last_ts = ts
 
         # Emit final record
-        if last_key is not None:
-            if last_value is not None or self._should_keep_tombstone(last_ts):
-                yield (last_key, last_value, last_ts)
+        if (
+            last_key is not None
+            and (
+                last_value is not None
+                or (last_ts is not None and self._should_keep_tombstone(last_ts))
+            )
+        ):
+            assert last_ts is not None
+            yield (last_key, last_value, last_ts)
 
     def _should_keep_tombstone(self, ts: Timestamp) -> bool:
         """Determine if tombstone should be retained."""
@@ -125,7 +137,7 @@ class SimpleCompactor:
         age_seconds = (current_time - ts) / 1000
         return age_seconds < self.config.tombstone_retention_seconds
 
-    def _write_output(self, records: Iterator[tuple], level: int) -> Sequence[SSTableMeta]:
+    def _write_output(self, records: Iterator[Record], level: int) -> Sequence[SSTableMeta]:
         """Write merged records to output SSTables."""
         output_metas = []
         current_writer = None
