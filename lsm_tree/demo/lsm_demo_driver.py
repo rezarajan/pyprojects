@@ -18,6 +18,7 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
+from lsm_tree.core.async_store import AsyncLSMStore
 from lsm_tree.core.config import LSMConfig
 from lsm_tree.core.store import SimpleLSMStore
 
@@ -53,12 +54,16 @@ def run_demo(args: argparse.Namespace) -> None:
     }
 
     print(f"Starting LSM demo for {args.duration_seconds}s...")
+    print(f"Store type: {'Async' if args.async_compaction else 'Sync'}")
     print(f"Config: memtable={args.memtable_max_bytes}, sstable={args.sstable_max_bytes}")
     print(f"Workload: write={args.write_rate}/s, read={args.read_rate}/s, delete={args.delete_rate}/s")
     print(f"Compaction thresholds: {compaction_thresholds}")
     print(f"Output: {args.out_csv}")
 
-    with SimpleLSMStore(cfg) as db, open(args.out_csv, "w", newline="") as f:
+    # Choose store type based on flag
+    store_class = AsyncLSMStore if args.async_compaction else SimpleLSMStore
+    
+    with store_class(cfg) as db, open(args.out_csv, "w", newline="") as f:
         w = csv.writer(f)
         header = [
             "ts_ms",
@@ -103,8 +108,17 @@ def run_demo(args: argparse.Namespace) -> None:
                     if threshold and level_count >= threshold:
                         try:
                             print(f"  [{elapsed:.1f}s] COMPACTION: L{level} → L{level+1} (L{level} count={level_count})")
-                            db.compact_level(level)
-                            event = f"compact_L{level}_L{level+1}"
+                            
+                            if args.async_compaction:
+                                # Schedule background compaction (non-blocking)
+                                job_id = db.schedule_compaction(level, wait=False)
+                                event = f"compact_L{level}_L{level+1}_scheduled"
+                                print(f"    Scheduled async compaction job {job_id}")
+                            else:
+                                # Synchronous compaction (blocks)
+                                db.compact_level(level)
+                                event = f"compact_L{level}_L{level+1}"
+                            
                             # Update counts after compaction
                             current_level_counts = [len(db._catalog.list_level(i)) for i in range(args.max_levels)]
                         except Exception as e:
@@ -196,6 +210,11 @@ def main() -> None:
 
     # Engine configuration
     p.add_argument("--data-dir", default="/tmp/lsm_demo", help="Data directory")
+    p.add_argument(
+        "--async-compaction",
+        action="store_true",
+        help="Use AsyncLSMStore with background compaction",
+    )
     p.add_argument(
         "--memtable-max-bytes",
         type=int,

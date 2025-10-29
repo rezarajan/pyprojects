@@ -16,6 +16,8 @@ SSTABLE_SIZE=${SSTABLE_SIZE:-1000000}
 SAMPLE_MS=${SAMPLE_MS:-250}
 DATA_DIR=${DATA_DIR:-/tmp/lsm_demo}
 CSV_FILE=${CSV_FILE:-/tmp/lsm_metrics.csv}
+# Enable async compaction with ASYNC=1 or ASYNC=true
+ASYNC=${ASYNC:-0}
 
 echo "================================================"
 echo "LSM Tree Demo"
@@ -29,6 +31,11 @@ echo "SSTable size: ${SSTABLE_SIZE} bytes"
 echo "Sampling: every ${SAMPLE_MS}ms"
 echo "Data dir: ${DATA_DIR}"
 echo "CSV output: ${CSV_FILE}"
+if [ "$ASYNC" = "1" ] || [ "$ASYNC" = "true" ]; then
+    echo "Compaction mode: Async (background)"
+else
+    echo "Compaction mode: Sync (foreground)"
+fi
 echo "================================================"
 echo ""
 
@@ -46,6 +53,10 @@ fi
 # Run the demo driver
 echo "Starting demo driver..."
 cd "$PROJECT_ROOT"
+ASYNC_FLAG=""
+if [ "$ASYNC" = "1" ] || [ "$ASYNC" = "true" ]; then
+    ASYNC_FLAG="--async-compaction"
+fi
 uv run python "$SCRIPT_DIR/lsm_demo_driver.py" \
     --duration-seconds "$DURATION" \
     --write-rate "$WRITE_RATE" \
@@ -55,7 +66,8 @@ uv run python "$SCRIPT_DIR/lsm_demo_driver.py" \
     --sstable-max-bytes "$SSTABLE_SIZE" \
     --sample-ms "$SAMPLE_MS" \
     --data-dir "$DATA_DIR" \
-    --out-csv "$CSV_FILE"
+    --out-csv "$CSV_FILE" \
+    $ASYNC_FLAG
 
 echo ""
 echo "================================================"

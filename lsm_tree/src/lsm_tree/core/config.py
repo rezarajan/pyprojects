@@ -22,6 +22,8 @@ class LSMConfig:
         sstable_max_bytes: Maximum size of a single SSTable
         max_levels: Maximum number of LSM tree levels
         wal_file_rotate_bytes: Size threshold for WAL rotation
+        apply_queue_max: Maximum size of background apply queue
+        apply_lock_timeout_ms: Timeout for try-lock in apply fallback (ms)
     """
 
     data_dir: str
@@ -33,3 +35,5 @@ class LSMConfig:
     sstable_max_bytes: int = 64 * 1024 * 1024  # 64 MB
     max_levels: int = 6
     wal_file_rotate_bytes: int = 64 * 1024 * 1024  # 64 MB
+    apply_queue_max: int = 100_000  # Background apply queue size
+    apply_lock_timeout_ms: int = 5  # Timeout for fallback sync apply

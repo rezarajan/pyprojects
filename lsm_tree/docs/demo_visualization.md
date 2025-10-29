@@ -32,6 +32,7 @@ Recommended workflow
 Tunable inputs (CLI for the driver)
 - Engine knobs (wired to LSMConfig)
   - `--data-dir`
+  - `--async-compaction` (use AsyncLSMStore with background compaction)
   - `--memtable-max-bytes`
   - `--sstable-max-bytes`
   - `--bloom-fpr`
@@ -304,7 +305,7 @@ uv run python save_video.py
 Demo script recipe
 - Run the driver for 60–90 seconds with an aggressive write rate and small memtable to force several flushes and at least one compaction:
   - `--write-rate 5000 --memtable-max-bytes 200_000 --sstable-max-bytes 1_000_000 --sample-ms 250`
-- Re-run with: larger memtable, fewer SSTables; or enable background compaction later if implemented.
+- To compare modes, enable background compaction with `--async-compaction` (or set `ASYNC=1 ./demo/run_demo.sh`).
 - Show the effects of tuning: increase `--bloom-fpr` → expect slightly fewer index/bloom skips; increase value size → larger memtable and fewer keys/flush.
 
 Annotations to add during the talk

@@ -12,7 +12,7 @@ This directory contains:
 
 ### 1. Run a demo workload
 
-Generate metrics with an aggressive write workload:
+Generate metrics with an aggressive write workload (synchronous compaction):
 
 ```bash
 uv run python demo/lsm_demo_driver.py \
@@ -21,6 +21,24 @@ uv run python demo/lsm_demo_driver.py \
     --memtable-max-bytes 200000 \
     --sstable-max-bytes 1000000 \
     --sample-ms 250
+```
+
+Enable non-blocking background compaction with the async flag:
+
+```bash
+uv run python demo/lsm_demo_driver.py \
+    --async-compaction \
+    --write-rate 5000 \
+    --duration-seconds 60 \
+    --memtable-max-bytes 200000 \
+    --sstable-max-bytes 1000000 \
+    --sample-ms 250
+```
+
+Using the convenience script with async compaction:
+
+```bash
+ASYNC=1 ./demo/run_demo.sh
 ```
 
 This will:
@@ -87,12 +105,15 @@ sudo pacman -S ffmpeg  # Arch Linux
 ### Engine Configuration
 
 - `--data-dir`: Data directory (default: `/tmp/lsm_demo`)
+- `--async-compaction`: Use AsyncLSMStore with background compaction (non-blocking writes)
 - `--memtable-max-bytes`: Memtable size threshold (default: 1,000,000)
 - `--sstable-max-bytes`: SSTable size limit (default: 8,000,000)
 - `--bloom-fpr`: Bloom filter false positive rate (default: 0.01)
 - `--max-levels`: Maximum LSM levels (default: 6)
 - `--wal-flush-every-write`: Fsync after every write (default: false)
 - `--tombstone-retention-seconds`: Tombstone retention (default: 86400)
+
+Tip: When using `run_demo.sh`, set `ASYNC=1` to enable background compaction.
 
 ### Workload Configuration
 

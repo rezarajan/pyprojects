@@ -18,6 +18,12 @@ Use the convenience script with default settings:
 
 This runs a 60-second demo with 5000 writes/sec and generates `/tmp/lsm_metrics.csv`.
 
+Enable non-blocking background compaction with:
+
+```bash
+ASYNC=1 ./demo/run_demo.sh
+```
+
 ## Customize the Run
 
 Override defaults via environment variables:
@@ -43,6 +49,7 @@ Available environment variables:
 - `SAMPLE_MS` (default: 250)
 - `DATA_DIR` (default: /tmp/lsm_demo)
 - `CSV_FILE` (default: /tmp/lsm_metrics.csv)
+- `ASYNC` (set to `1` or `true` to enable background compaction)
 
 ## Visualize Results
 
@@ -94,6 +101,18 @@ For full control, run the driver directly:
 uv run python demo/lsm_demo_driver.py \
     --write-rate 5000 \
     --read-rate 1000 \
+    --duration-seconds 60 \
+    --memtable-max-bytes 200000 \
+    --sstable-max-bytes 1000000 \
+    --sample-ms 250
+```
+
+Enable async compaction mode by adding `--async-compaction`:
+
+```bash
+uv run python demo/lsm_demo_driver.py \
+    --async-compaction \
+    --write-rate 5000 \
     --duration-seconds 60 \
     --memtable-max-bytes 200000 \
     --sstable-max-bytes 1000000 \
