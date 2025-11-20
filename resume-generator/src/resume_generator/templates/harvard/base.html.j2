@@ -1,0 +1,70 @@
+# A very small starter template. Expand styling in styles.css.j2.
+"""
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ resume.name }} — Resume</title>
+    <style>
+    /* Minimal inline CSS for starter */
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 32px; }
+    h1 { font-size: 20px; margin-bottom: 0; }
+    h2 { font-size: 14px; margin-top: 20px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+    .section { margin-top: 12px; }
+    .entry { margin-bottom: 8px; }
+    .meta { float: right; color: #666; }
+    ul { margin: 6px 0 6px 18px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>{{ resume.name }}</h1>
+      <div>{{ resume.contact.email if resume.contact.email else '' }} • {{ resume.contact.phone if resume.contact.phone else '' }}</div>
+    </header>
+
+    <main>
+      {% if resume.education %}
+      <section class="section">
+        <h2>Education</h2>
+        {% for e in resume.education %}
+        <div class="entry">
+          <strong>{{ e.title }}</strong>
+          <span class="meta">{{ e.start_date }}{% if e.end_date %} — {{ e.end_date }}{% endif %}</span>
+          <div>{{ e.organization }}{% if e.location %}, {{ e.location }}{% endif %}</div>
+          {% if e.bullets %}
+          <ul>
+            {% for b in e.bullets %}
+            <li>{{ b }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </section>
+      {% endif %}
+
+      {% if resume.experience %}
+      <section class="section">
+        <h2>Experience</h2>
+        {% for e in resume.experience %}
+        <div class="entry">
+          <strong>{{ e.title }}</strong>
+          <span class="meta">{{ e.start_date }}{% if e.end_date %} — {{ e.end_date }}{% endif %}</span>
+          <div>{{ e.organization }}{% if e.location %}, {{ e.location }}{% endif %}</div>
+          {% if e.bullets %}
+          <ul>
+            {% for b in e.bullets %}
+            <li>{{ b }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </section>
+      {% endif %}
+
+    </main>
+  </body>
+</html>
+"""

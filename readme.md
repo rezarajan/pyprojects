@@ -18,3 +18,4 @@
 | [Algorithms](./algorithms/) | uv (project management), pytest, make, O-Notation Analysis, Python Generics| A small library for common search algorithms. Use pytest for more structured tests. Make used to manage commands. Time complexity analysis in O-Notation. |
 | [Data Structures](./data_structures/) | O-Notation Analysis, Python Generics, Data Structures | A small library for common data structures. Includes read, insert, delet and search functionality. Generics used to ensure robustness; typing used to provide better static code analysis. |
 | [UC Berkely Extension - DSA Assignments](./dsa_assignments/) | Data Structures and Algorithms in Python | Python coding assignments for the UC Berkely DSA Extension Course |
+| [LSM Tree](./lsm_tree/) | LSM Trees  | An LSM Tree implementation in pure Python; part of UC Berkeley DSA course project. |

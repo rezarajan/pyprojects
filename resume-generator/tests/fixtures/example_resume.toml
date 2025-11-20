@@ -1,0 +1,12 @@
+# Minimal example TOML to test the flow.
+name = "Ruby Swift"
+[contact]
+email = "rswift@college.harvard.edu"
+phone = "617-495-2595"
+[[education]]
+title = "AB in Computer Science"
+organization = "HARVARD UNIVERSITY"
+location = "Cambridge, MA"
+start_date = "2019"
+end_date = "2026"
+bullets = ["GPA: 3.55/4.0", "Relevant Coursework: Systems Programming, Data Structures"]
